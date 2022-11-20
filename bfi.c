@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 	if (argc == 3 && !strcmp(argv[1], "-d")) {
 		debug = true;
 	} else if (argc != 2) {
-		fprintf(stderr, "usage: %s [-d] file\n", argv[1]);
+		fprintf(stderr, "usage: %s [-d] file\n", argv[0]);
 	}
 
 	FILE *f = fopen(argv[argc - 1], "r");
