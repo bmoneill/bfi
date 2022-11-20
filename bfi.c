@@ -3,6 +3,8 @@
  */
 #define MAX_LOOPS 2048
 #define TAPE_SIZE 30000
+#define INPUT_MAX 1024
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -14,9 +16,11 @@ typedef struct {
 } Loop;
 
 bool debug = false;
+bool repl = false;
+
 char *prog;
 uint8_t tape[TAPE_SIZE];
-uint16_t tp = 0, ip = 0, tp_max = 0;
+int ip = 0, tp = 0, tp_max = 0;
 Loop loops[MAX_LOOPS];
 
 size_t program_len;
@@ -67,15 +71,13 @@ void interpret() {
 			tp--;
 			if (tp < 0) {
 				fprintf(stderr, "tape pointer out of bounds.\n");
-				exit(1);
+				tp = 0;
+//				exit(1);
 			}
 			break;
 		case ',':
 			char c = fgetc(stdin);
-			/* for reading files (EOF = -1, will overflow on uint8_t) */
-			if (c == EOF) {
-				c = 0;
-			}
+			if (c == EOF) c = 0; // EOF will overflow on uint8_t
 			tape[tp] = c;
 			break;
 		case '.':
@@ -107,21 +109,9 @@ void interpret() {
 	}
 }
 
-void run() {
-	build_loops();
-	for (ip = 0; ip < program_len; ip++) {
-		interpret(prog[ip]);
-	}
-}
-
-int main(int argc, char *argv[]) {
-	if (argc == 3 && !strcmp(argv[1], "-d")) {
-		debug = true;
-	} else if (argc != 2) {
-		fprintf(stderr, "usage: %s [-d] file\n", argv[0]);
-	}
-
-	FILE *f = fopen(argv[argc - 1], "r");
+int load_file(const char *path)
+{
+	FILE *f = fopen(path, "r");
 	if (f) {
 		fseek(f, 0, SEEK_END);
 		program_len = ftell(f);
@@ -131,16 +121,104 @@ int main(int argc, char *argv[]) {
 		if (prog) {
 			fread(prog, 1, program_len, f);
 		} else {
-			fprintf(stderr, "error: can't allocate memory for program storage.\n");
+			print_err("can't allocate memory for program storage.");
 			return 1;
 		}
 		fclose(f);
 	} else {
-		fprintf(stderr, "error: can't open file.\n");
+		print_err("can't open file.");
 		return 1;
 	}
 
-	run();
-	free(prog);
 	return 0;
+}
+
+void print_err(const char *s)
+{
+	fprintf(stderr, "error: %s\n", s);
+}
+
+void print_usage(char *argv0)
+{
+	fprintf(stderr, "usage: %s [-dr] [file]\n", argv0);
+}
+
+void run_repl()
+{
+	char input[INPUT_MAX];
+	prog = malloc(INPUT_MAX);
+	size_t program_len_old = 0;
+	size_t prog_alloc = INPUT_MAX;
+
+	while (1) {
+		printf("> ");
+		fgets(input, INPUT_MAX, stdin);
+		program_len_old = program_len;
+		program_len += strlen(input);
+
+		/* resize prog if necessary 
+		while (prog_len > prog_alloc) {
+			prog_alloc *= 2;
+			char *newprog = malloc(prog_alloc);
+			memcpy(newprog, prog, prog_len_old);
+			free(prog);
+			prog = newprog;
+		}*/
+
+		strcpy(prog + program_len_old, input);
+
+		build_loops();
+		for (; ip < program_len; ip++) {
+			interpret(prog[ip]);
+		}
+	}
+
+	free(prog);
+}
+
+void run_file()
+{
+	build_loops();
+	for (ip = 0; ip < program_len; ip++) {
+		interpret(prog[ip]);
+	}
+	free(prog);
+}
+
+int main(int argc, char *argv[])
+{
+	char *path = NULL;
+	for (int i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			for (int j = 1; j < strlen(argv[i]); j++) {
+				switch (argv[i][j]) {
+					case 'd':
+						debug = true;
+						break;
+					case 'r':
+						repl = true;
+						break;
+				}
+			}
+		} else {
+			if (path == NULL) {
+				path = argv[i];
+			} else {
+				print_usage(argv[0]);
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
+	if (!repl && path) {
+		load_file(path);
+		run_file();
+	} else if (repl && !path) {
+		run_repl();
+	} else {
+		print_usage(argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
