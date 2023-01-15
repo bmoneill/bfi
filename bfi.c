@@ -26,6 +26,15 @@ Loop loops[MAX_LOOPS];
 size_t program_len;
 size_t num_loops;
 
+void build_loops(void);
+void diagnose(void);
+void interpret(void);
+int load_file(const char *path);
+void print_err(const char *s);
+void print_usage(char *argv0);
+void run_file(void);
+void run_repl(void);
+
 void build_loops() {
 	num_loops = 0;
 
@@ -72,7 +81,6 @@ void interpret() {
 			if (tp < 0) {
 				fprintf(stderr, "tape pointer out of bounds.\n");
 				tp = 0;
-//				exit(1);
 			}
 			break;
 		case ',':
@@ -155,21 +163,10 @@ void run_repl()
 		fgets(input, INPUT_MAX, stdin);
 		program_len_old = program_len;
 		program_len += strlen(input);
-
-		/* resize prog if necessary 
-		while (prog_len > prog_alloc) {
-			prog_alloc *= 2;
-			char *newprog = malloc(prog_alloc);
-			memcpy(newprog, prog, prog_len_old);
-			free(prog);
-			prog = newprog;
-		}*/
-
 		strcpy(prog + program_len_old, input);
-
 		build_loops();
 		for (; ip < program_len; ip++) {
-			interpret(prog[ip]);
+			interpret();
 		}
 	}
 
@@ -180,7 +177,7 @@ void run_file()
 {
 	build_loops();
 	for (ip = 0; ip < program_len; ip++) {
-		interpret(prog[ip]);
+		interpret();
 	}
 	free(prog);
 }
