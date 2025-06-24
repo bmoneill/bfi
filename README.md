@@ -37,5 +37,5 @@ Submit an issue. Email me a patch or submit a PR if you've fixed it.
 
 ## License
 
-Copyright (c) 2022 Ben O'Neill <ben@oneill.sh>. Licensed under the
-MIT License. See [LICENSE](LICENSE).
+Copyright (c) 2022 Ben O'Neill <ben@oneill.sh>. This work is released under the
+terms of the MIT License. See [LICENSE](LICENSE) for the license terms.

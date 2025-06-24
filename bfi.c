@@ -4,7 +4,7 @@
  * @author Ben O'Neill <ben@oneill.sh>
  * 
  * @copyright Copyright (c) 2022-2025 Ben O'Neill <ben@oneill.sh>.
- * This work is licensed under the terms of the MIT License. See
+ * This work is released under the terms of the MIT License. See
  * LICENSE.
  */
 #define MAX_LOOPS 2048
