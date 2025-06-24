@@ -33,7 +33,7 @@ bfi [-dr] [file]
 
 ## Bugs
 
-Submit an issue. Email me a patch or submit a PR if you've fixed it.
+If you find a bug, submit an issue, PR, or email me with a description and/or patch.
 
 ## License
 
