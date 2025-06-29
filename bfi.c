@@ -160,38 +160,38 @@ static void diagnose() {
  *  This function reads the current instruction pointed to by the instruction pointer (ip)
  *  and performs the corresponding operation on the tape.
  */
-static void interpret() {
+static void interpret(void) {
     char c;
+    bool receiving = true;
+
     switch (prog[ip]) {
-    case '+':
-        tape[tp]++;
-        break;
-    case '-':
-        tape[tp]--;
-        break;
+    case '+': tape[tp]++; break;
+    case '-': tape[tp]--; break;
     case '>':
         tp++;
         if (tp > tp_max) {
-            tp_max = tp;  // increase max memory address for debug
+            fprintf(stderr, "Tape pointer overflow.\n");
+            tp = 0;
         }
         break;
     case '<':
         tp--;
         if (tp < 0) {
-            fprintf(stderr, "tape pointer out of bounds.\n");
+            fprintf(stderr, "Tape pointer underflow.\n");
             tp = 0;
         }
         break;
     case ',':
-        c = fgetc(stdin);
-        if (c == EOF) {
-            c = 0;  // EOF will overflow on uint8_t
+        if (receiving) {
+            c = fgetc(stdin);
+            if (c == EOF) {
+                c = 0;  // EOF will overflow on uint8_t
+                receiving = false;
+            }
         }
         tape[tp] = c;
         break;
-    case '.':
-        putchar(tape[tp]);
-        break;
+    case '.': putchar(tape[tp]); break;
     case '[':
         if (!tape[tp]) {
             for (int i = 0; i < num_loops; i++) {
@@ -231,7 +231,7 @@ static void interpret() {
  *
  *  @note The program is expected to be in plain text format, with brainfuck instructions.
  *        The function allocates memory for the program and reads the entire file into this buffer.
- *        The caller is responsible for freeing the allocated memory
+ *        The caller is responsible for freeing the allocated memory.
  */
 int load_file(const char* path) {
     FILE* f = fopen(path, "r");
