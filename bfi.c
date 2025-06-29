@@ -169,9 +169,11 @@ static void interpret(void) {
     case '-': tape[tp]--; break;
     case '>':
         tp++;
-        if (tp > tp_max) {
+        if (tp > TAPE_SIZE) {
             fprintf(stderr, "Tape pointer overflow.\n");
             tp = 0;
+        } else if (tp > tp_max) {
+            tp_max = tp;
         }
         break;
     case '<':
