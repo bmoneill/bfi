@@ -1,11 +1,11 @@
-VERSION = 0.1
+VERSION  = 0.2
 
-PREFIX=/usr/local
-MANPREFIX=$(PREFIX)/man
+PREFIX   = /usr/local
 
-CC=cc
-LD=$(CC)
+CC       = cc
+LD       = $(CC)
 
-CFLAGS=-O3 -Wall -std=c99 -pedantic -g
-CPPFLAGS=-D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_FILE_OFFSET_BITS=64
-LDFLAGS=
+CFLAGS   = -O2 -Werror -std=c99 -pedantic
+CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 \
+           -D_FILE_OFFSET_BITS=64 -DVERSION="$(VERSION)"
+LDFLAGS  = -s
