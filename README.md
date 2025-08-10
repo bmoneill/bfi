@@ -3,17 +3,18 @@
 This is an interpreter for the Turing-complete esoteric programming language
 brainfuck, written in C.
 
-
 ## Building
 
-```
+### Linux
+
+```shell
 make
 sudo make install
 ```
 
 ## Usage
 
-```
+```shell
 bfi [-dr] [file]
 ```
 
