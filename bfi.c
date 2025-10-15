@@ -235,7 +235,7 @@ static void interpret(void) {
  *        The function allocates memory for the program and reads the entire file into this buffer.
  *        The caller is responsible for freeing the allocated memory.
  */
-int load_file(const char* path) {
+static int load_file(const char* path) {
     FILE* f = fopen(path, "r");
     if (f) {
         fseek(f, 0, SEEK_END);
@@ -263,6 +263,7 @@ int load_file(const char* path) {
 
 /**
  * @brief Prints an error message to stderr.
+ * @param s String to print to stderr.
  */
 static void print_err(const char* s) { fprintf(stderr, "error: %s\n", s); }
 
@@ -276,13 +277,28 @@ static void print_usage(const char* argv0) {
 }
 
 /**
+ * @brief Runs the brainfuck program loaded from a file.
+ *
+ * This function builds the loop structure for the brainfuck program,
+ * then iterates through the program instructions, interpreting each one
+ * until the end of the program is reached.
+ */
+static void run_file(void) {
+    build_loops();
+    for (ip = 0; ip < program_len; ip++) {
+        interpret();
+    }
+    free(prog);
+}
+
+/**
  * @brief Runs the brainfuck interpreter in REPL (Read-Eval-Print Loop) mode.
  *
  * This function continuously reads input from the user, appends it to the program,
  * and interprets the brainfuck instructions until the user terminates the program.
  * This allows for interactive execution of brainfuck code.
  */
-void run_repl(void) {
+static void run_repl(void) {
     char input[INPUT_MAX];
     prog = (char*)malloc(INPUT_MAX);
 
@@ -305,20 +321,5 @@ void run_repl(void) {
         }
     }
 
-    free(prog);
-}
-
-/**
- * @brief Runs the brainfuck program loaded from a file.
- *
- * This function builds the loop structure for the brainfuck program,
- * then iterates through the program instructions, interpreting each one
- * until the end of the program is reached.
- */
-void run_file(void) {
-    build_loops();
-    for (ip = 0; ip < program_len; ip++) {
-        interpret();
-    }
     free(prog);
 }
