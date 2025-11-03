@@ -55,7 +55,7 @@ int         program_len;
 int         num_loops;
 
 static void build_loops(void);
-static void diagnose(void);
+static void diagnose(file_index_t*);
 static void interpret(file_index_t*);
 static int  load_file(const char*);
 static void print_err(const char*);
@@ -165,8 +165,9 @@ static void build_loops(void) {
         exit(EXIT_FAILURE);
     }
 }
-static void diagnose() {
-    fprintf(stderr, "Tape pointer: %d\nInstruction pointer: %d\n", tp, ip);
+
+static void diagnose(file_index_t* idx) {
+    fprintf(stderr, "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n", idx->line, idx->line_idx, tp, ip);
 
     /* print memory map */
     for (int i = 0; i < tp_max; i++) {
@@ -251,7 +252,7 @@ static void interpret(file_index_t* index) {
         break;
     case '#':
         if (debug) {
-            diagnose();
+            diagnose(index);
         }
         break;
     case '\n':
@@ -355,7 +356,7 @@ static void run_repl(void) {
         index.line     = 1;
         index.line_idx = 0;
 
-        while (index.idx < program_len)
+        for (; ip < program_len; ip++)
             interpret(&index);
     }
 
