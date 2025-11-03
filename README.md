@@ -1,5 +1,8 @@
 # bfi: brainfuck interpreter
 
+[![CI status](https://github.com/bmoneill/bfi/actions/workflows/cmake-single-platform.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/cmake-single-platform.yml).
+[![clang-format status](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml)
+
 This is an interpreter for the Turing-complete esoteric programming language
 brainfuck, written in C.
 

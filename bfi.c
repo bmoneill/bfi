@@ -36,22 +36,22 @@ typedef struct {
 
 /* Flags */
 bool debug = false;
-bool repl = false;
+bool repl  = false;
 
 /* Global interpreter variables */
-char* prog;
-uint8_t tape[TAPE_SIZE];
-int ip = 0;
-int tp = 0;
-int tp_max = 0;
-loop_t loops[MAX_LOOPS];
-int program_len;
-int num_loops;
+char*       prog;
+uint8_t     tape[TAPE_SIZE];
+int         ip     = 0;
+int         tp     = 0;
+int         tp_max = 0;
+loop_t      loops[MAX_LOOPS];
+int         program_len;
+int         num_loops;
 
 static void build_loops(void);
 static void diagnose(void);
 static void interpret(void);
-static int load_file(const char* path);
+static int  load_file(const char* path);
 static void print_err(const char* s);
 static void print_usage(const char* argv0);
 static void run_file(void);
@@ -74,12 +74,10 @@ int main(int argc, char* argv[]) {
                     break;
                 }
             }
-        }
-        else {
+        } else {
             if (path == NULL) {
                 path = argv[i];
-            }
-            else {
+            } else {
                 print_usage(argv[0]);
                 return EXIT_FAILURE;
             }
@@ -89,11 +87,9 @@ int main(int argc, char* argv[]) {
     if (!repl && path) {
         load_file(path);
         run_file();
-    }
-    else if (repl && !path) {
+    } else if (repl && !path) {
         run_repl();
-    }
-    else {
+    } else {
         print_usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -124,8 +120,7 @@ static void build_loops(void) {
                 exit(EXIT_FAILURE);
             }
             stack[stack_top++] = i;
-        }
-        else if (prog[i] == ']') {
+        } else if (prog[i] == ']') {
             if (stack_top <= 0) {
                 print_err("unmatched closing bracket ']'.");
                 exit(EXIT_FAILURE);
@@ -136,7 +131,7 @@ static void build_loops(void) {
                 exit(EXIT_FAILURE);
             }
             loops[num_loops].start = start;
-            loops[num_loops].end = i;
+            loops[num_loops].end   = i;
             num_loops++;
         }
     }
@@ -165,8 +160,12 @@ static void interpret(void) {
     bool receiving = true;
 
     switch (prog[ip]) {
-    case '+': tape[tp]++; break;
-    case '-': tape[tp]--; break;
+    case '+':
+        tape[tp]++;
+        break;
+    case '-':
+        tape[tp]--;
+        break;
     case '>':
         tp++;
         if (tp > TAPE_SIZE) {
@@ -187,13 +186,15 @@ static void interpret(void) {
         if (receiving) {
             c = fgetc(stdin);
             if (c == EOF) {
-                c = 0;  // EOF will overflow on uint8_t
+                c         = 0; // EOF will overflow on uint8_t
                 receiving = false;
             }
         }
         tape[tp] = c;
         break;
-    case '.': putchar(tape[tp]); break;
+    case '.':
+        putchar(tape[tp]);
+        break;
     case '[':
         if (!tape[tp]) {
             for (int i = 0; i < num_loops; i++) {
@@ -242,18 +243,16 @@ static int load_file(const char* path) {
         program_len = ftell(f);
         fseek(f, 0, SEEK_SET);
 
-        prog = (char*)malloc(program_len);
+        prog = (char*) malloc(program_len);
         if (prog) {
             fread(prog, 1, program_len, f);
-        }
-        else {
+        } else {
             print_err("can't allocate memory for program storage.");
             fclose(f);
             return 1;
         }
         fclose(f);
-    }
-    else {
+    } else {
         print_err("can't open file.");
         return 1;
     }
@@ -272,9 +271,7 @@ static void print_err(const char* s) { fprintf(stderr, "error: %s\n", s); }
  *
  * @param argv0 The name of the program as it was invoked.
  */
-static void print_usage(const char* argv0) {
-    fprintf(stderr, "usage: %s [-dr] [file]\n", argv0);
-}
+static void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [file]\n", argv0); }
 
 /**
  * @brief Runs the brainfuck program loaded from a file.
@@ -300,7 +297,7 @@ static void run_file(void) {
  */
 static void run_repl(void) {
     char input[INPUT_MAX];
-    prog = (char*)malloc(INPUT_MAX);
+    prog = (char*) malloc(INPUT_MAX);
 
     if (!prog) {
         print_err("can't allocate memory for program storage.");
