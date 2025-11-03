@@ -21,6 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    int idx;
+    int line;
+    int line_idx;
+} file_index_t;
+
 /**
  *  @brief Structure to represent a loop in the brainfuck program.
  *   This structure holds the start and end indices of a loop,
@@ -30,8 +36,8 @@
  *         and the `end` field represents the index of the closing bracket ']'.
  */
 typedef struct {
-    uint16_t start;
-    uint16_t end;
+    file_index_t start;
+    file_index_t end;
 } loop_t;
 
 /* Flags */
@@ -50,10 +56,10 @@ int         num_loops;
 
 static void build_loops(void);
 static void diagnose(void);
-static void interpret(void);
-static int  load_file(const char* path);
-static void print_err(const char* s);
-static void print_usage(const char* argv0);
+static void interpret(file_index_t*);
+static int  load_file(const char*);
+static void print_err(const char*);
+static void print_usage(const char*);
 static void run_file(void);
 static void run_repl(void);
 
@@ -110,47 +116,52 @@ int main(int argc, char* argv[]) {
  */
 static void build_loops(void) {
     num_loops = 0;
-    int stack[MAX_LOOPS];
-    int stack_top = 0;
-    int line      = 1;
-    int line_char = 0;
+    file_index_t stack[MAX_LOOPS];
+    int          stack_top = 0;
+    int          line      = 1;
+    int          line_idx  = 0;
 
     for (int i = 0; i < program_len; i++) {
-        line_char++;
+        line_idx++;
         if (prog[i] == '[') {
             if (stack_top >= MAX_LOOPS) {
                 fprintf(stderr,
                         "Error (%d,%d): Too many loops (max = %d).",
                         line,
-                        line_char,
+                        line_idx,
                         MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
-            stack[stack_top++] = i;
+            stack[stack_top].idx    = i;
+            stack[stack_top].line     = line;
+            stack[stack_top].line_idx = line_idx;
+            stack_top++;
         } else if (prog[i] == ']') {
             if (stack_top <= 0) {
-                fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.", line, line_char);
+                fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.\n", line, line_idx);
                 exit(EXIT_FAILURE);
             }
-            int start = stack[--stack_top];
+            file_index_t start = stack[--stack_top];
             if (num_loops >= MAX_LOOPS) {
                 fprintf(stderr,
                         "Error (%d,%d): Too many loops (max = %d).",
                         line,
-                        line_char,
+                        line_idx,
                         MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
-            loops[num_loops].start = start;
-            loops[num_loops].end   = i;
+            loops[num_loops].start        = start;
+            loops[num_loops].end.idx      = i;
+            loops[num_loops].end.line     = line;
+            loops[num_loops].end.line_idx = line_idx;
             num_loops++;
         } else if (prog[i] == '\n') {
             line++;
-            line_char = 0;
+            line_idx = 0;
         }
     }
     if (stack_top != 0) {
-        fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.", line, line_char);
+        fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.\n", line, line_idx);
         exit(EXIT_FAILURE);
     }
 }
@@ -169,10 +180,11 @@ static void diagnose() {
  *  This function reads the current instruction pointed to by the instruction pointer (ip)
  *  and performs the corresponding operation on the tape.
  */
-static void interpret(void) {
+static void interpret(file_index_t* index) {
     char c;
     bool receiving = true;
 
+    index->line_idx++;
     switch (prog[ip]) {
     case '+':
         tape[tp]++;
@@ -184,8 +196,9 @@ static void interpret(void) {
         tp++;
         if (tp > TAPE_SIZE) {
             fprintf(stderr,
-                    "Warning (char %d): Tape pointer overflow. Tape pointer set to zero.\n",
-                    ip);
+                    "Warning (%d,%d): Tape pointer overflow. Tape pointer set to zero.\n",
+                    index->line,
+                    index->line_idx);
             tp = 0;
         } else if (tp > tp_max) {
             tp_max = tp;
@@ -195,8 +208,9 @@ static void interpret(void) {
         tp--;
         if (tp < 0) {
             fprintf(stderr,
-                    "Warning: (char %d): Tape pointer underflow. Tape pointer set to zero.\n",
-                    ip);
+                    "Warning (%d,%d): Tape pointer underflow. Tape pointer set to zero.\n",
+                    index->line,
+                    index->line_idx);
             tp = 0;
         }
         break;
@@ -216,8 +230,10 @@ static void interpret(void) {
     case '[':
         if (!tape[tp]) {
             for (int i = 0; i < num_loops; i++) {
-                if (loops[i].start == ip) {
-                    ip = loops[i].end;
+                if (loops[i].start.idx == ip) {
+                    ip              = loops[i].end.idx;
+                    index->line     = loops[i].end.line;
+                    index->line_idx = loops[i].end.line_idx;
                 }
             }
         }
@@ -225,8 +241,10 @@ static void interpret(void) {
     case ']':
         if (tape[tp]) {
             for (int i = 0; i < num_loops; i++) {
-                if (loops[i].end == ip) {
-                    ip = loops[i].start;
+                if (loops[i].end.idx == ip) {
+                    ip              = loops[i].start.idx;
+                    index->line     = loops[i].start.line;
+                    index->line_idx = loops[i].start.line_idx;
                 }
             }
         }
@@ -235,6 +253,10 @@ static void interpret(void) {
         if (debug) {
             diagnose();
         }
+        break;
+    case '\n':
+        index->line++;
+        index->line_idx = 0;
         break;
     }
 }
@@ -293,9 +315,13 @@ static void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [f
  * until the end of the program is reached.
  */
 static void run_file(void) {
+    file_index_t idx;
+    idx.line     = 1;
+    idx.line_idx = 0;
+
     build_loops();
     for (ip = 0; ip < program_len; ip++) {
-        interpret();
+        interpret(&idx);
     }
     free(prog);
 }
@@ -325,9 +351,12 @@ static void run_repl(void) {
         snprintf(prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
         build_loops();
 
-        for (; ip < program_len; ip++) {
-            interpret();
-        }
+        file_index_t index;
+        index.line     = 1;
+        index.line_idx = 0;
+
+        while (index.idx < program_len)
+            interpret(&index);
     }
 
     free(prog);
