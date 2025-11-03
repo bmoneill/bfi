@@ -132,7 +132,7 @@ static void build_loops(void) {
                         MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
-            stack[stack_top].idx    = i;
+            stack[stack_top].idx      = i;
             stack[stack_top].line     = line;
             stack[stack_top].line_idx = line_idx;
             stack_top++;
@@ -167,7 +167,12 @@ static void build_loops(void) {
 }
 
 static void diagnose(file_index_t* idx) {
-    fprintf(stderr, "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n", idx->line, idx->line_idx, tp, ip);
+    fprintf(stderr,
+            "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n",
+            idx->line,
+            idx->line_idx,
+            tp,
+            ip);
 
     /* print memory map */
     for (int i = 0; i < tp_max; i++) {
