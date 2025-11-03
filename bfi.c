@@ -25,7 +25,7 @@
  * @brief Structure to represent an index in a file (or user input).
  */
 typedef struct {
-    int idx;
+    int idx; // only used for build_loops()
     int line;
     int line_idx;
 } file_index_t;
