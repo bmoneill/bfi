@@ -112,31 +112,45 @@ static void build_loops(void) {
     num_loops = 0;
     int stack[MAX_LOOPS];
     int stack_top = 0;
+    int line      = 1;
+    int lineChar  = 0;
 
     for (int i = 0; i < program_len; i++) {
+        lineChar++;
         if (prog[i] == '[') {
             if (stack_top >= MAX_LOOPS) {
-                print_err("too many nested loops.");
+                fprintf(stderr,
+                        "Error (%d,%d): Too many loops (max = %d).",
+                        line,
+                        lineChar,
+                        MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
             stack[stack_top++] = i;
         } else if (prog[i] == ']') {
             if (stack_top <= 0) {
-                print_err("unmatched closing bracket ']'.");
+                fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.", line, lineChar);
                 exit(EXIT_FAILURE);
             }
             int start = stack[--stack_top];
             if (num_loops >= MAX_LOOPS) {
-                print_err("too many loops.");
+                fprintf(stderr,
+                        "Error (%d,%d): Too many loops (max = %d).",
+                        line,
+                        lineChar,
+                        MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
             loops[num_loops].start = start;
             loops[num_loops].end   = i;
             num_loops++;
+        } else if (prog[i] == '\n') {
+            line++;
+            lineChar = 0;
         }
     }
     if (stack_top != 0) {
-        print_err("unmatched opening bracket '['.");
+        fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.", line, lineChar);
         exit(EXIT_FAILURE);
     }
 }
@@ -169,7 +183,9 @@ static void interpret(void) {
     case '>':
         tp++;
         if (tp > TAPE_SIZE) {
-            fprintf(stderr, "Tape pointer overflow.\n");
+            fprintf(stderr,
+                    "Warning (char %d): Tape pointer overflow. Tape pointer set to zero.\n",
+                    ip);
             tp = 0;
         } else if (tp > tp_max) {
             tp_max = tp;
@@ -178,7 +194,9 @@ static void interpret(void) {
     case '<':
         tp--;
         if (tp < 0) {
-            fprintf(stderr, "Tape pointer underflow.\n");
+            fprintf(stderr,
+                    "Warning: (char %d): Tape pointer underflow. Tape pointer set to zero.\n",
+                    ip);
             tp = 0;
         }
         break;
@@ -247,24 +265,18 @@ static int load_file(const char* path) {
         if (prog) {
             fread(prog, 1, program_len, f);
         } else {
-            print_err("can't allocate memory for program storage.");
+            fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
             fclose(f);
             return 1;
         }
         fclose(f);
     } else {
-        print_err("can't open file.");
+        fprintf(stderr, "Error: Cannot open file %s for reading.\n", path);
         return 1;
     }
 
     return 0;
 }
-
-/**
- * @brief Prints an error message to stderr.
- * @param s String to print to stderr.
- */
-static void print_err(const char* s) { fprintf(stderr, "error: %s\n", s); }
 
 /**
  * @brief Prints the usage message for the program.
@@ -300,7 +312,7 @@ static void run_repl(void) {
     prog = (char*) malloc(INPUT_MAX);
 
     if (!prog) {
-        print_err("can't allocate memory for program storage.");
+        fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
         exit(EXIT_FAILURE);
     }
 
