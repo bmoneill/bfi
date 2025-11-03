@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Structure to represent an index in a file (or user input).
+ */
 typedef struct {
     int idx;
     int line;
