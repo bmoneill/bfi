@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         path:
-          - check: "/"
+          - check: "${GITHUB_WORKSPACE}"
             exclude: ""
     steps:
       - uses: actions/checkout@v4
