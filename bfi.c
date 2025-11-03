@@ -113,23 +113,23 @@ static void build_loops(void) {
     int stack[MAX_LOOPS];
     int stack_top = 0;
     int line      = 1;
-    int lineChar  = 0;
+    int line_char = 0;
 
     for (int i = 0; i < program_len; i++) {
-        lineChar++;
+        line_char++;
         if (prog[i] == '[') {
             if (stack_top >= MAX_LOOPS) {
                 fprintf(stderr,
                         "Error (%d,%d): Too many loops (max = %d).",
                         line,
-                        lineChar,
+                        line_char,
                         MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
             stack[stack_top++] = i;
         } else if (prog[i] == ']') {
             if (stack_top <= 0) {
-                fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.", line, lineChar);
+                fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.", line, line_char);
                 exit(EXIT_FAILURE);
             }
             int start = stack[--stack_top];
@@ -137,7 +137,7 @@ static void build_loops(void) {
                 fprintf(stderr,
                         "Error (%d,%d): Too many loops (max = %d).",
                         line,
-                        lineChar,
+                        line_char,
                         MAX_LOOPS);
                 exit(EXIT_FAILURE);
             }
@@ -146,11 +146,11 @@ static void build_loops(void) {
             num_loops++;
         } else if (prog[i] == '\n') {
             line++;
-            lineChar = 0;
+            line_char = 0;
         }
     }
     if (stack_top != 0) {
-        fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.", line, lineChar);
+        fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.", line, line_char);
         exit(EXIT_FAILURE);
     }
 }
