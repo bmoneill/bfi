@@ -128,10 +128,9 @@ void bf_run_repl(bf_parameters_t params) {
     init_bf(&bf, params);
 
     bf.prog_size = params.input_max;
-    input        = (char*) malloc(bf.prog_size + 1);
 
-    bf.prog      = (char*) malloc(bf.prog_size + 1);
-    if (!bf.prog) {
+    if (!(bf.prog = (char*) malloc(bf.prog_size + 1))
+        || !(input = (char*) malloc(bf.prog_size + 1))) {
         fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
         exit(EXIT_FAILURE);
     }
@@ -146,8 +145,7 @@ void bf_run_repl(bf_parameters_t params) {
         bf.prog_len += strlen(input);
         if ((size_t) bf.prog_len > bf.prog_size) {
             bf.prog_size *= 2;
-            bf.prog = realloc(bf.prog, bf.prog_size);
-            if (!bf.prog) {
+            if (!(bf.prog = realloc(bf.prog, bf.prog_size))) {
                 fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
                 exit(EXIT_FAILURE);
             }
@@ -156,10 +154,8 @@ void bf_run_repl(bf_parameters_t params) {
         snprintf(bf.prog + prog_len_old, bf.prog_size - prog_len_old, "%s", input);
         reset_loops(&bf);
         build_loops(&bf);
-
         index.line     = 1;
         index.line_idx = 0;
-
         for (; bf.ip < bf.prog_len; bf.ip++) {
             interpret(&bf, &index);
         }
