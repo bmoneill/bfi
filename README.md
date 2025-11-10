@@ -21,16 +21,17 @@ sudo make install
 bfi [-cCdrsv] [-o output_file] [-t tape_size] [file]
 ```
 
-* `-c`: Compile to native binary
-* `-C`: Compile to C
-* `-d`: Print tape pointer and instruction pointer whenever a `#` is encountered.
-* `-r`: Run in interactive REPL mode
-* `-s`: Disable interpretation of special characters (`#` and `@`)
+* `-c`: Compile to native binary.
+* `-C`: Compile to C.
+* `-d`: Print tape pointer, instruction pointer, and values of all previously accessed cells whenever a `#` is encountered.
+* `-r`: Run in interactive REPL mode (can be reset with `@` unless `-s` was provided).
+* `-s`: Disable interpretation of special characters (`#` and `@`).
+* `-v`: Print the version number and exit.
 
 * `-o output_file`: Specify the output file (default: './a.out' for binaries, './a.out.c' for C source)
 * `-t tape_size`: Specify the size of the tape (default: 30000)
 
-If no file is specified, `bfi` will read source code from standard input.
+If `file` is not specified, `bfi` will read source code from standard input.
 
 ## Screenshots
 
