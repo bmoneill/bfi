@@ -69,22 +69,23 @@ typedef struct {
     int      prog_len;
     size_t   prog_size;
     uint8_t* tape;
-    int      tape_size;
+    size_t   tape_size;
     int      ip;
     int      tp;
     int      tp_max;
     loop_t*  loops;
-    size_t   loops_len;
-    int      loops_size;
+    int      loops_len;
+    size_t   loops_size;
 } bf_t;
 
 static void build_loops(bf_t*);
 static void diagnose(bf_t*, file_index_t*);
-static void free_brainfuck(bf_t*);
-static void load_flags(bf_t*, bf_parameters_t);
+static void free_bf(bf_t*);
+static void init_bf(bf_t*, bf_parameters_t);
 static void interpret(bf_t*, file_index_t*);
 static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
+static void reset_loops(bf_t*);
 
 /**
  * @brief Runs the brainfuck program loaded from a file.
@@ -93,10 +94,10 @@ static void reset(bf_t*);
  * then iterates through the program instructions, interpreting each one
  * until the end of the program is reached.
  */
-void bf_run_file(const char* path, bf_parameters_t flags) {
+void bf_run_file(const char* path, bf_parameters_t params) {
     bf_t bf;
+    init_bf(&bf, params);
     load_file(&bf, path);
-    load_flags(&bf, flags);
 
     file_index_t idx;
     idx.line     = 1;
@@ -115,12 +116,14 @@ void bf_run_file(const char* path, bf_parameters_t flags) {
  * and interprets the brainfuck instructions until the user terminates the program.
  * This allows for interactive execution of brainfuck code.
  */
-void bf_run_repl(bf_parameters_t flags) {
-    bf_t   bf;
-    char*  input     = (char*) malloc(flags.input_max);
-    size_t prog_size = flags.input_max;
+void bf_run_repl(bf_parameters_t params) {
+    bf_t bf;
+    init_bf(&bf, params);
 
-    bf.prog          = (char*) malloc(flags.input_max);
+    bf.prog_size = params.input_max;
+    char* input  = (char*) malloc(bf.prog_size + 1);
+
+    bf.prog      = (char*) malloc(bf.prog_size + 1);
     if (!bf.prog) {
         fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
         exit(EXIT_FAILURE);
@@ -128,25 +131,24 @@ void bf_run_repl(bf_parameters_t flags) {
 
     while (1) {
         printf("> ");
-        size_t program_len_old = 0;
-        if (!fgets(input, flags.input_max, stdin)) {
+        if (!fgets(input, params.input_max, stdin)) {
             break;
         }
 
-        program_len_old = bf.prog_len;
+        size_t prog_len_old = bf.prog_len;
         bf.prog_len += strlen(input);
-        if (bf.prog_len > prog_size) {
-            prog_size *= 2;
-            bf.prog = realloc(bf.prog, prog_size);
+        if (bf.prog_len > bf.prog_size) {
+            bf.prog_size *= 2;
+            bf.prog = realloc(bf.prog, bf.prog_size);
             if (!bf.prog) {
                 fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
                 exit(EXIT_FAILURE);
             }
         }
-        snprintf(bf.prog + program_len_old, flags.input_max - program_len_old, "%s", input);
-        if (bf.prog) {
-            build_loops(&bf);
-        }
+
+        snprintf(bf.prog + prog_len_old, bf.prog_size - prog_len_old, "%s", input);
+        reset_loops(&bf);
+        build_loops(&bf);
 
         file_index_t index;
         index.line     = 1;
@@ -158,7 +160,7 @@ void bf_run_repl(bf_parameters_t flags) {
     }
 
     free(input);
-    free_brainfuck(&bf);
+    free_bf(&bf);
 }
 
 /**
@@ -196,6 +198,7 @@ static void build_loops(bf_t* bf) {
         } else if (bf->prog[i] == ']') {
             if (stack_top <= 0) {
                 fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.\n", line, line_idx);
+                free(stack);
                 exit(EXIT_FAILURE);
             }
             file_index_t start                    = stack[--stack_top];
@@ -212,8 +215,11 @@ static void build_loops(bf_t* bf) {
 
     if (stack_top != 0) {
         fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.\n", line, line_idx);
+        free(stack);
         exit(EXIT_FAILURE);
     }
+
+    free(stack);
 }
 
 /**
@@ -240,7 +246,7 @@ static void diagnose(bf_t* bf, file_index_t* idx) {
  * @brief Frees the memory allocated for the brainfuck program.
  * @param bf Pointer to the brainfuck program.
  */
-static void free_brainfuck(bf_t* bf) {
+static void free_bf(bf_t* bf) {
     if (bf) {
         if (bf->prog) {
             free(bf->prog);
@@ -251,8 +257,14 @@ static void free_brainfuck(bf_t* bf) {
         if (bf->loops) {
             free(bf->loops);
         }
-        free(bf);
     }
+}
+
+static void init_bf(bf_t* bf, bf_parameters_t params) {
+    memset(bf, 0, sizeof(bf_t));
+    bf->flags     = params.flags;
+    bf->tape_size = params.tape_size;
+    bf->tape      = calloc(params.tape_size, sizeof(uint8_t));
 }
 
 /**
@@ -394,10 +406,6 @@ static int load_file(bf_t* bf, const char* path) {
  * @param bf Pointer to the brainfuck program state.
  * @param parameters The parameters containing the flags to be loaded.
  */
-static void load_flags(bf_t* bf, bf_parameters_t parameters) {
-    bf->flags     = parameters.flags;
-    bf->tape_size = parameters.tape_size;
-}
 
 /**
  * @brief Resets the brainfuck program state.
@@ -414,4 +422,9 @@ static void reset(bf_t* bf) {
     bf->ip        = 0;
     bf->tp        = 0;
     bf->tp_max    = 0;
+}
+
+static void reset_loops(bf_t* bf) {
+    memset(bf->loops, 0, bf->loops_len);
+    bf->loops_len = 0;
 }
