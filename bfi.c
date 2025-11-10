@@ -11,15 +11,17 @@
  * LICENSE.
  */
 
-#define MAX_LOOPS 2048
-#define TAPE_SIZE 30000
-#define INPUT_MAX 1024
+#define MAX_LOOPS        2048
+#define TAPE_SIZE        30000
+#define INPUT_MAX        1024
+#define INPUT_STACK_SIZE 16
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 
 /**
  * @brief Structure to represent an index in a file (or user input).
@@ -43,6 +45,12 @@ typedef struct {
     file_index_t end;
 } loop_t;
 
+typedef struct {
+    char** stack;
+    int    size;
+    int    top;
+} stack_t;
+
 /* Flags */
 bool debug = false;
 bool repl  = false;
@@ -54,7 +62,7 @@ int         ip     = 0;
 int         tp     = 0;
 int         tp_max = 0;
 loop_t      loops[MAX_LOOPS];
-int         program_len;
+int         prog_len;
 int         num_loops;
 
 static void build_loops(void);
@@ -124,7 +132,7 @@ static void build_loops(void) {
     int          line      = 1;
     int          line_idx  = 0;
 
-    for (int i = 0; i < program_len; i++) {
+    for (int i = 0; i < prog_len; i++) {
         line_idx++;
         if (prog[i] == '[') {
             if (stack_top >= MAX_LOOPS) {
@@ -289,12 +297,12 @@ static int load_file(const char* path) {
     FILE* f = fopen(path, "r");
     if (f) {
         fseek(f, 0, SEEK_END);
-        program_len = ftell(f);
+        prog_len = ftell(f);
         fseek(f, 0, SEEK_SET);
 
-        prog = (char*) malloc(program_len);
+        prog = (char*) malloc(prog_len);
         if (prog) {
-            fread(prog, 1, program_len, f);
+            fread(prog, 1, prog_len, f);
         } else {
             fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
             fclose(f);
@@ -329,7 +337,7 @@ static void run_file(void) {
     idx.line_idx = 0;
 
     build_loops();
-    for (ip = 0; ip < program_len; ip++) {
+    for (ip = 0; ip < prog_len; ip++) {
         interpret(&idx);
     }
     free(prog);
@@ -344,8 +352,9 @@ static void run_file(void) {
  */
 static void run_repl(void) {
     char input[INPUT_MAX];
-    prog = (char*) malloc(INPUT_MAX);
+    prog             = (char*) malloc(INPUT_MAX);
     size_t prog_size = INPUT_MAX;
+
 
     if (!prog) {
         fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
@@ -359,9 +368,9 @@ static void run_repl(void) {
             break;
         }
 
-        program_len_old = program_len;
-        program_len += strlen(input);
-        if (program_len > prog_size) {
+        program_len_old = prog_len;
+        prog_len += strlen(input);
+        if (prog_len > prog_size) {
             prog_size *= 2;
             prog = realloc(prog, prog_size);
             if (!prog) {
@@ -371,13 +380,13 @@ static void run_repl(void) {
         }
         snprintf(prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
         if (prog)
-        build_loops();
+            build_loops();
 
         file_index_t index;
         index.line     = 1;
         index.line_idx = 0;
 
-        for (; ip < program_len; ip++) {
+        for (; ip < prog_len; ip++) {
             interpret(&index);
         }
     }
