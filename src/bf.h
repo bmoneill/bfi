@@ -1,3 +1,13 @@
+/**
+ * @file bfi.h
+ * @brief brainfuck interpreter header
+ * @author Ben O'Neill <ben@oneill.sh>
+ *
+ * @copyright Copyright (c) 2022-2025 Ben O'Neill <ben@oneill.sh>.
+ * This work is released under the terms of the MIT License. See
+ * LICENSE.
+ */
+
 #ifndef BF_H
 #define BF_H
 
@@ -23,8 +33,12 @@
 #define BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS 4
 #define BF_FLAG_ONLY_GENERATE_C_SOURCE       8
 
-
-
+/**
+ * @brief Structure to hold parameters for Brainfuck compilation and execution.
+ * @param flags Flags to control compilation and execution behavior.
+ * @param tape_size Size of the tape.
+ * @param input_max User input buffer size.
+ */
 typedef struct {
     uint8_t flags;
     size_t  tape_size;
