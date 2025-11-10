@@ -1,9 +1,11 @@
 #ifndef BF_H
 #define BF_H
 
-#define BF_FLAG_DEBUG               1
-#define BF_FLAG_REPL                2
-
+#define BF_DEFAULT_TAPE_SIZE                 30000
+#define BF_DEFAULT_INPUT_MAX                 1024
+#define BF_FLAG_DEBUG                        1
+#define BF_FLAG_REPL                         2
+#define BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS 4
 
 #include <stddef.h>
 #include <stdint.h>

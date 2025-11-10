@@ -20,12 +20,11 @@
 #include <termios.h>
 
 #define INITIAL_LOOP_SIZE        2048
-#define DEFAULT_TAPE_SIZE        30000
-#define DEFAULT_INPUT_MAX        1024
 #define DEFAULT_INPUT_STACK_SIZE 16
 
-#define IS_REPL_MODE(b)  ((b).flags & BF_FLAG_REPL)
-#define IS_DEBUG_MODE(b) ((b).flags & BF_FLAG_DEBUG)
+#define IN_REPL_MODE(b)                 ((b).flags & BF_FLAG_REPL)
+#define IN_DEBUG_MODE(b)                ((b).flags & BF_FLAG_DEBUG)
+#define SPECIAL_INSTRUCTIONS_ENABLED(b) (!((b).flags & BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS))
 
 /**
  * @brief Structure to represent an index in a file (or user input).
@@ -158,6 +157,7 @@ void bf_run_repl(bf_parameters_t flags) {
         }
     }
 
+    free(input);
     free_brainfuck(&bf);
 }
 
@@ -331,12 +331,12 @@ static void interpret(bf_t* bf, file_index_t* index) {
         }
         break;
     case '#':
-        if (IS_DEBUG_MODE(*bf)) {
+        if (IN_DEBUG_MODE(*bf) && SPECIAL_INSTRUCTIONS_ENABLED(*bf)) {
             diagnose(bf, index);
         }
         break;
     case '@':
-        if (IS_REPL_MODE(*bf)) {
+        if (IN_REPL_MODE(*bf) && SPECIAL_INSTRUCTIONS_ENABLED(*bf)) {
             reset(bf);
         }
         break;
@@ -386,9 +386,17 @@ static int load_file(bf_t* bf, const char* path) {
     return 0;
 }
 
+/**
+ * @brief Loads flags into the brainfuck program state.
+ *
+ * This function loads the flags from the provided parameters into the brainfuck program state.
+ *
+ * @param bf Pointer to the brainfuck program state.
+ * @param parameters The parameters containing the flags to be loaded.
+ */
 static void load_flags(bf_t* bf, bf_parameters_t parameters) {
-    bf->flags = parameters.flags;
-    bf->tape_size =  parameters.tape_size;
+    bf->flags     = parameters.flags;
+    bf->tape_size = parameters.tape_size;
 }
 
 /**
