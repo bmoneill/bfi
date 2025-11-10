@@ -353,9 +353,12 @@ static void run_repl(void) {
     }
 
     while (1) {
-        size_t program_len_old = 0;
         printf("> ");
-        fgets(input, INPUT_MAX, stdin);
+        size_t program_len_old = 0;
+        if (!fgets(input, INPUT_MAX, stdin)) {
+            break;
+        }
+
         program_len_old = program_len;
         program_len += strlen(input);
         if (program_len > prog_size) {
@@ -374,8 +377,9 @@ static void run_repl(void) {
         index.line     = 1;
         index.line_idx = 0;
 
-        for (; ip < program_len; ip++)
+        for (; ip < program_len; ip++) {
             interpret(&index);
+        }
     }
 
     free(prog);
