@@ -1,3 +1,5 @@
 bfi
 *.b
 *.tar.gz
+a.out*
+vgcore*
