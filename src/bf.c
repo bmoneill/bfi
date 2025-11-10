@@ -87,6 +87,11 @@ static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
 static void reset_loops(bf_t*);
 
+
+void bf_compile(const char* input, bf_parameters_t params) {
+    // TODO Implement
+}
+
 /**
  * @brief Runs the brainfuck program loaded from a file.
  *

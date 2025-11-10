@@ -16,7 +16,7 @@ typedef struct {
     size_t  input_max;
 } bf_parameters_t;
 
-void bf_compile(const char*);
+void bf_compile(const char*, bf_parameters_t);
 void bf_run_file(const char*, bf_parameters_t);
 void bf_run_repl(bf_parameters_t);
 
