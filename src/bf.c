@@ -74,7 +74,7 @@ typedef struct {
 typedef struct {
     int      flags;
     char*    prog;
-    int      prog_len;
+    size_t   prog_len;
     size_t   prog_size;
     uint8_t* tape;
     size_t   tape_size;
@@ -82,7 +82,7 @@ typedef struct {
     int      tp;
     int      tp_max;
     loop_t*  loops;
-    int      loops_len;
+    size_t   loops_len;
     size_t   loops_size;
 } bf_t;
 
@@ -184,7 +184,7 @@ void bf_run_file(const char* path, bf_parameters_t params) {
     idx.line_idx = 0;
     build_loops(&bf);
 
-    for (bf.ip = 0; bf.ip < bf.prog_len; bf.ip++) {
+    for (bf.ip = 0; (size_t) bf.ip < bf.prog_len; bf.ip++) {
         interpret(&bf, &idx);
     }
     free(bf.prog);
@@ -221,7 +221,7 @@ void bf_run_repl(bf_parameters_t params) {
 
         prog_len_old = bf.prog_len;
         bf.prog_len += strlen(input);
-        if ((size_t) bf.prog_len > bf.prog_size) {
+        if (bf.prog_len > bf.prog_size) {
             bf.prog_size *= 2;
             if (!(bf.prog = realloc(bf.prog, bf.prog_size))) {
                 fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
@@ -234,7 +234,7 @@ void bf_run_repl(bf_parameters_t params) {
         build_loops(&bf);
         index.line     = 1;
         index.line_idx = 0;
-        for (; bf.ip < bf.prog_len; bf.ip++) {
+        for (; (size_t) bf.ip < bf.prog_len; bf.ip++) {
             interpret(&bf, &index);
         }
     }
@@ -261,7 +261,7 @@ static void build_loops(bf_t* bf) {
     int           stack_size;
     int           line;
     int           line_idx;
-    int           i;
+    size_t        i;
 
     stack          = malloc(sizeof(file_index_t) * INITIAL_LOOP_SIZE);
     stack_top      = 0;
@@ -383,9 +383,9 @@ static void init_tokens(void) {
  *  and performs the corresponding operation on the tape.
  */
 static void interpret(bf_t* bf, file_index_t* index) {
-    int  i;
-    char c;
-    bool receiving;
+    size_t i;
+    char   c;
+    bool   receiving;
 
     receiving = true;
     index->line_idx++;
@@ -494,7 +494,12 @@ static int load_file(bf_t* bf, const char* path) {
         fseek(f, 0, SEEK_SET);
 
         if ((bf->prog = (char*) malloc(bf->prog_len))) {
-            fread(bf->prog, 1, bf->prog_len, f);
+            if (fread(bf->prog, 1, bf->prog_len, f) != (unsigned long) bf->prog_len) {
+                fprintf(stderr, "Error: Cannot read file %s.\n", path);
+                free(bf->prog);
+                fclose(f);
+                return 1;
+            }
         } else {
             fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
             fclose(f);
