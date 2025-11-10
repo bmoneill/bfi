@@ -1,6 +1,7 @@
 #include "bf.h"
 
 #include <getopt.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,20 +14,29 @@ static void print_version(const char*);
  * @brief Entry point.
  */
 int main(int argc, char* argv[]) {
-    char*           path = NULL;
     int             opt;
     bf_parameters_t params;
+    char*           path        = NULL;
+    char*           output_path = NULL;
+    bool            compile     = false;
+    params.flags                = 0;
+    params.input_max            = BF_DEFAULT_INPUT_MAX;
+    params.tape_size            = BF_DEFAULT_TAPE_SIZE;
 
-    params.flags     = 0;
-    params.input_max = BF_DEFAULT_INPUT_MAX;
-    params.tape_size = BF_DEFAULT_TAPE_SIZE;
-
-    while ((opt = getopt(argc, argv, "cdrst:v")) != -1) {
+    while ((opt = getopt(argc, argv, "cCdo:rst:v")) != -1) {
         switch (opt) {
-        case 'c': /* TODO */
+        case 'c':
+            compile = true;
+            break;
+        case 'C':
+            compile = true;
+            params.flags |= BF_FLAG_ONLY_GENERATE_C_SOURCE;
             break;
         case 'd':
             params.flags |= BF_FLAG_DEBUG;
+            break;
+        case 'o':
+            output_path = optarg;
             break;
         case 'r':
             params.flags |= BF_FLAG_REPL;
@@ -50,6 +60,11 @@ int main(int argc, char* argv[]) {
         path = argv[optind];
     }
 
+    if (compile) {
+        bf_compile(path, output_path, params);
+        return EXIT_SUCCESS;
+    }
+
     if (!(params.flags & BF_FLAG_REPL) && path) {
         bf_run_file(path, params);
     } else if ((params.flags & BF_FLAG_REPL) && !path) {
@@ -68,9 +83,7 @@ int main(int argc, char* argv[]) {
  * @param argv0 The name of the program as it was invoked.
  */
 static void print_usage(const char* argv0) {
-    fprintf(stderr, "usage: %s [-cdrsv] [-t tapesize] [file]\n", argv0);
+    fprintf(stderr, "usage: %s [-cCdrsv] [-o output_file] [-t tape_size] [file]\n", argv0);
 }
 
-static void print_version(const char* argv0) {
-    fprintf(stderr, "%s %s\n", argv0, BF_VERSION);
-}
+static void print_version(const char* argv0) { fprintf(stderr, "%s %s\n", argv0, BF_VERSION); }

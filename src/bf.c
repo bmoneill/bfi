@@ -87,8 +87,6 @@ static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
 static void reset_loops(bf_t*);
 
-void        bf_compile(const char* input, bf_parameters_t params) {}
-
 /**
  * @brief Runs the brainfuck program loaded from a file.
  *
@@ -272,6 +270,11 @@ static void free_bf(bf_t* bf) {
     }
 }
 
+/**
+ * @brief Initializes the brainfuck program.
+ * @param bf Pointer to the brainfuck program.
+ * @param params Parameters for the brainfuck program.
+ */
 static void init_bf(bf_t* bf, bf_parameters_t params) {
     memset(bf, 0, sizeof(bf_t));
     bf->flags     = params.flags;
@@ -419,16 +422,20 @@ static int load_file(bf_t* bf, const char* path) {
  * tape, and loop structure, and resetting the instruction pointer and tape pointer.
  */
 static void reset(bf_t* bf) {
+    reset_loops(bf);
     memset(bf->prog, 0, bf->prog_len * sizeof(char));
     memset(bf->tape, 0, bf->tape_size * sizeof(uint8_t));
-    memset(bf->loops, 0, bf->loops_len);
     bf->prog_len  = 0;
-    bf->loops_len = 0;
     bf->ip        = 0;
     bf->tp        = 0;
     bf->tp_max    = 0;
 }
 
+/**
+ * @brief Resets the loop structure.
+ *
+ * This function resets the loop structure by clearing the loop buffer.
+ */
 static void reset_loops(bf_t* bf) {
     memset(bf->loops, 0, bf->loops_len);
     bf->loops_len = 0;
