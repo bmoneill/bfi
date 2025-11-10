@@ -19,9 +19,15 @@
 #include <string.h>
 #include <termios.h>
 
+/* Compiler stuff */
+#define COMPILE_HEAD  "#include <stdio.h>\nint main(void) {unsigned char t[%ld];int p=0;"
+#define TMP_FILE_PATH "/tmp/bfi.c"
+
+/* Interpreter stuff */
 #define INITIAL_LOOP_SIZE        2048
 #define DEFAULT_INPUT_STACK_SIZE 16
 
+#define ERROR(s) fprintf(stderr, "Error: %s\n", s); exit(EXIT_FAILURE)
 #define IN_REPL_MODE(b)                 ((b).flags & BF_FLAG_REPL)
 #define IN_DEBUG_MODE(b)                ((b).flags & BF_FLAG_DEBUG)
 #define SPECIAL_INSTRUCTIONS_ENABLED(b) (!((b).flags & BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS))
@@ -82,10 +88,84 @@ static void build_loops(bf_t*);
 static void diagnose(bf_t*, file_index_t*);
 static void free_bf(bf_t*);
 static void init_bf(bf_t*, bf_parameters_t);
+static void init_tokens(void);
 static void interpret(bf_t*, file_index_t*);
 static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
 static void reset_loops(bf_t*);
+
+const char* tokens[']' + 1];
+
+/**
+ * @brief Compile Brainfuck code from input_path to output_path.
+ *
+ * This function takes a Brainfuck source code file specified by input_path,
+ * compiles it into a C program, compiles the C program, and writes the resulting code to the file
+ * specified by output_path.
+ * If input_path is NULL, the function will read from stdin. If output_path is NULL, the function
+ * will write to ./a.out(.c).
+ *
+ * @param input_path Path to the input Brainfuck source code file.
+ * @param output_path Path to the output binary or C file.
+ * @param params Compilation parameters
+ */
+void bf_compile(const char* input_path, const char* output_path, bf_parameters_t params) {
+    FILE* input;
+    FILE* output;
+    bool  binary_output = !(params.flags & BF_FLAG_ONLY_GENERATE_C_SOURCE);
+    int   c;
+    int   depth;
+
+    /**** Set up files ****/
+
+    if (!input_path) {
+        input = stdin;
+    } else if (!(input = fopen(input_path, "r"))) {
+        ERROR("Failed to open input file");
+    }
+
+    if (!output_path) {
+        output_path = binary_output ? "./a.out" : "./a.out.c";
+    }
+
+    if (binary_output && !(output = fopen(TMP_FILE_PATH, "w"))) {
+        ERROR("Failed to create temporary file");
+    } else if (!(output = fopen(output_path, "w"))) {
+        ERROR("Failed to open output file");
+    }
+
+    /*** Actual compilation ***/
+
+    init_tokens();
+    depth = 0;
+    fprintf(output, COMPILE_HEAD, params.tape_size);
+    while ((c = fgetc(input)) != EOF) {
+        if (tokens[c]) {
+            fprintf(output, "%s", tokens[c]);
+        }
+    }
+
+    if (depth != 0) {
+        fclose(output);
+        remove(output_path);
+        ERROR("Unbalanced brackets");
+    }
+
+    fprintf(output, "return 0;}");
+    fclose(output);
+
+    if (binary_output) {
+        char* cmd = malloc(128);
+        sprintf(cmd,
+                "%s %s -o %s %s",
+                BF_DEFAULT_COMPILER,
+                BF_DEFAULT_COMPILE_FLAGS,
+                output_path,
+                TMP_FILE_PATH);
+        system(cmd);
+        remove(TMP_FILE_PATH);
+    }
+}
 
 /**
  * @brief Runs the brainfuck program loaded from a file.
@@ -271,9 +351,9 @@ static void free_bf(bf_t* bf) {
 }
 
 /**
- * @brief Initializes the brainfuck program.
- * @param bf Pointer to the brainfuck program.
- * @param params Parameters for the brainfuck program.
+ * @brief Initializes a bf_t.
+ * @param bf Pointer to the bf_t
+ * @param params Parameters for the bf_t.
  */
 static void init_bf(bf_t* bf, bf_parameters_t params) {
     memset(bf, 0, sizeof(bf_t));
@@ -282,6 +362,20 @@ static void init_bf(bf_t* bf, bf_parameters_t params) {
     bf->tape      = calloc(params.tape_size, sizeof(uint8_t));
 }
 
+/**
+ * @brief Initializes compiler tokens
+ */
+static void init_tokens(void) {
+    memset(tokens, 0, (']' + 1) * sizeof(char*));
+    tokens['>'] = "p++;";
+    tokens['<'] = "p--;";
+    tokens['+'] = "t[p]++;";
+    tokens['-'] = "t[p]--;";
+    tokens['.'] = "putchar(t[p]);";
+    tokens[','] = "t[p]=getchar();";
+    tokens['['] = "while(t[p]){";
+    tokens[']'] = "}";
+}
 /**
  *  @brief Interprets a single instruction in the brainfuck program.
  *
