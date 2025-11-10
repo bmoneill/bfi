@@ -1,6 +1,8 @@
 #ifndef BF_H
 #define BF_H
 
+#define BF_DEFAULT_COMPILER                  "gcc"
+#define BF_DEFAULT_COMPILE_FLAGS             "-O3 -s -ffast-math"
 #define BF_DEFAULT_TAPE_SIZE                 30000
 #define BF_DEFAULT_INPUT_MAX                 1024
 #define BF_FLAG_DEBUG                        1

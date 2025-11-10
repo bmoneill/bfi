@@ -89,7 +89,6 @@ static void reset_loops(bf_t*);
 
 
 void bf_compile(const char* input, bf_parameters_t params) {
-    // TODO Implement
 }
 
 /**

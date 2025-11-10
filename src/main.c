@@ -62,5 +62,5 @@ int main(int argc, char* argv[]) {
  * @param argv0 The name of the program as it was invoked.
  */
 static void print_usage(const char* argv0) {
-    fprintf(stderr, "usage: %s [-drs] [-t tapesize] [file]\n", argv0);
+    fprintf(stderr, "usage: %s [-cdrs] [-t tapesize] [file]\n", argv0);
 }
