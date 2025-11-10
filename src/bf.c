@@ -117,6 +117,7 @@ void bf_compile(const char* input_path, const char* output_path, bf_parameters_t
     bool  binary_output = !(params.flags & BF_FLAG_ONLY_GENERATE_C_SOURCE);
     int   c;
     int   depth;
+    int   sys_ret;
 
     /**** Set up files ****/
     if (!input_path) {
@@ -162,8 +163,11 @@ void bf_compile(const char* input_path, const char* output_path, bf_parameters_t
                 BF_DEFAULT_COMPILE_FLAGS,
                 output_path,
                 TMP_FILE_PATH);
-        system(cmd);
+        sys_ret = system(cmd);
         remove(TMP_FILE_PATH);
+        if (sys_ret != 0) {
+            ERROR("Failed to compile program");
+        }
     }
 }
 
