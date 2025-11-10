@@ -13,17 +13,19 @@
 
 #include "bf.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 
-#define LOOPS            2048
-#define TAPE_SIZE        30000
-#define INPUT_MAX        1024
-#define INPUT_STACK_SIZE 16
-#define FLAG_DEBUG       1
-#define FLAG_REPL        2
+#define INITIAL_LOOP_SIZE        2048
+#define DEFAULT_TAPE_SIZE        30000
+#define DEFAULT_INPUT_MAX        1024
+#define DEFAULT_INPUT_STACK_SIZE 16
+
+#define IS_REPL_MODE(b)  ((b).flags & BF_FLAG_REPL)
+#define IS_DEBUG_MODE(b) ((b).flags & BF_FLAG_DEBUG)
 
 /**
  * @brief Structure to represent an index in a file (or user input).
@@ -80,9 +82,84 @@ typedef struct {
 static void build_loops(bf_t*);
 static void diagnose(bf_t*, file_index_t*);
 static void free_brainfuck(bf_t*);
+static void load_flags(bf_t*, bf_parameters_t);
 static void interpret(bf_t*, file_index_t*);
 static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
+
+/**
+ * @brief Runs the brainfuck program loaded from a file.
+ *
+ * This function builds the loop structure for the brainfuck program,
+ * then iterates through the program instructions, interpreting each one
+ * until the end of the program is reached.
+ */
+void bf_run_file(const char* path, bf_parameters_t flags) {
+    bf_t bf;
+    load_file(&bf, path);
+    load_flags(&bf, flags);
+
+    file_index_t idx;
+    idx.line     = 1;
+    idx.line_idx = 0;
+    build_loops(&bf);
+    for (bf.ip = 0; bf.ip < bf.prog_len; bf.ip++) {
+        interpret(&bf, &idx);
+    }
+    free(bf.prog);
+}
+
+/**
+ * @brief Runs the brainfuck interpreter in REPL (Read-Eval-Print Loop) mode.
+ *
+ * This function continuously reads input from the user, appends it to the program,
+ * and interprets the brainfuck instructions until the user terminates the program.
+ * This allows for interactive execution of brainfuck code.
+ */
+void bf_run_repl(bf_parameters_t flags) {
+    bf_t   bf;
+    char*  input     = (char*) malloc(flags.input_max);
+    size_t prog_size = flags.input_max;
+
+    bf.prog          = (char*) malloc(flags.input_max);
+    if (!bf.prog) {
+        fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        printf("> ");
+        size_t program_len_old = 0;
+        if (!fgets(input, flags.input_max, stdin)) {
+            break;
+        }
+
+        program_len_old = bf.prog_len;
+        bf.prog_len += strlen(input);
+        if (bf.prog_len > prog_size) {
+            prog_size *= 2;
+            bf.prog = realloc(bf.prog, prog_size);
+            if (!bf.prog) {
+                fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        snprintf(bf.prog + program_len_old, flags.input_max - program_len_old, "%s", input);
+        if (bf.prog) {
+            build_loops(&bf);
+        }
+
+        file_index_t index;
+        index.line     = 1;
+        index.line_idx = 0;
+
+        for (; bf.ip < bf.prog_len; bf.ip++) {
+            interpret(&bf, &index);
+        }
+    }
+
+    free_brainfuck(&bf);
+}
 
 /**
  * @brief Builds the loop structure for the brainfuck interpreter.
@@ -95,7 +172,7 @@ static void reset(bf_t*);
  * @note This function does not return a value. If an error occurs (such as exceeding MAX_LOOPS),
  *       it prints an error message and terminates the program using exit(EXIT_FAILURE).
  */
-void build_loops(bf_t* bf) {
+static void build_loops(bf_t* bf) {
     bf->loops_len            = 0;
     bf->loops_size           = INITIAL_LOOP_SIZE;
     bf->loops                = malloc(sizeof(loop_t) * INITIAL_LOOP_SIZE);
@@ -145,7 +222,7 @@ void build_loops(bf_t* bf) {
  * This function prints the current state of the brainfuck program, including the line number,
  * tape pointer, instruction pointer, and memory map.
  */
-void diagnose(bf_t* bf, file_index_t* idx) {
+static void diagnose(bf_t* bf, file_index_t* idx) {
     fprintf(stderr,
             "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n",
             idx->line,
@@ -163,7 +240,7 @@ void diagnose(bf_t* bf, file_index_t* idx) {
  * @brief Frees the memory allocated for the brainfuck program.
  * @param bf Pointer to the brainfuck program.
  */
-void free_brainfuck(bf_t* bf) {
+static void free_brainfuck(bf_t* bf) {
     if (bf) {
         if (bf->prog) {
             free(bf->prog);
@@ -181,10 +258,10 @@ void free_brainfuck(bf_t* bf) {
 /**
  *  @brief Interprets a single instruction in the brainfuck program.
  *
- *  This function reads the current instruction pointed to by the instruction pointer (ip)
+ *  This function reads the current instruction pointed to by the instruction pointer
  *  and performs the corresponding operation on the tape.
  */
-void interpret(bf_t* bf, file_index_t* index) {
+static void interpret(bf_t* bf, file_index_t* index) {
     char c;
     bool receiving = true;
 
@@ -285,7 +362,7 @@ void interpret(bf_t* bf, file_index_t* index) {
  *        The function allocates memory for the program and reads the entire file into this buffer.
  *        The caller is responsible for freeing the allocated memory.
  */
-int load_file(bf_t* bf, const char* path) {
+static int load_file(bf_t* bf, const char* path) {
     FILE* f = fopen(path, "r");
     if (f) {
         fseek(f, 0, SEEK_END);
@@ -309,14 +386,18 @@ int load_file(bf_t* bf, const char* path) {
     return 0;
 }
 
-/**
- * @brief Prints the usage message for the program.
- *
- * @param argv0 The name of the program as it was invoked.
- */
-void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [file]\n", argv0); }
+static void load_flags(bf_t* bf, bf_parameters_t parameters) {
+    bf->flags = parameters.flags;
+    bf->tape_size =  parameters.tape_size;
+}
 
-void reset(bf_t* bf) {
+/**
+ * @brief Resets the brainfuck program state.
+ *
+ * This function resets the program state by clearing the program buffer,
+ * tape, and loop structure, and resetting the instruction pointer and tape pointer.
+ */
+static void reset(bf_t* bf) {
     memset(bf->prog, 0, bf->prog_len * sizeof(char));
     memset(bf->tape, 0, bf->tape_size * sizeof(uint8_t));
     memset(bf->loops, 0, bf->loops_len);
@@ -325,74 +406,4 @@ void reset(bf_t* bf) {
     bf->ip        = 0;
     bf->tp        = 0;
     bf->tp_max    = 0;
-}
-
-/**
- * @brief Runs the brainfuck program loaded from a file.
- *
- * This function builds the loop structure for the brainfuck program,
- * then iterates through the program instructions, interpreting each one
- * until the end of the program is reached.
- */
-void run_file(bf_t* bf) {
-    file_index_t idx;
-    idx.line     = 1;
-    idx.line_idx = 0;
-
-    build_loops(bf);
-    for (bf->ip = 0; bf->ip < bf->prog_len; bf->ip++) {
-        interpret(bf, &idx);
-    }
-    free(bf->prog);
-}
-
-/**
- * @brief Runs the brainfuck interpreter in REPL (Read-Eval-Print Loop) mode.
- *
- * This function continuously reads input from the user, appends it to the program,
- * and interprets the brainfuck instructions until the user terminates the program.
- * This allows for interactive execution of brainfuck code.
- */
-void run_repl(void) {
-    bf_t bf;
-    char input[INPUT_MAX];
-    bf->prog         = (char*) malloc(INPUT_MAX);
-    size_t prog_size = INPUT_MAX;
-
-    if (!bf->prog) {
-        fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    while (1) {
-        printf("> ");
-        size_t program_len_old = 0;
-        if (!fgets(input, INPUT_MAX, stdin)) {
-            break;
-        }
-
-        program_len_old = bf->prog_len;
-        bf->prog_len += strlen(input);
-        if (bf->prog_len > prog_size) {
-            prog_size *= 2;
-            bf->prog = realloc(bf->prog, prog_size);
-            if (!bf->prog) {
-                fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-        snprintf(bf->prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
-        if (bf->prog)
-            build_loops(bf->prog);
-
-        file_index_t index;
-        index.line     = 1;
-        index.line_idx = 0;
-
-        for (; bf->ip < bf->prog_len; bf->ip++) {
-            interpret(bf, &index);
-        }
-    }
-
-    free_brainfuck(bf);
 }
