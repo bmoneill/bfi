@@ -1,9 +1,9 @@
-# bfi: brainfuck interpreter
+# bfi: brainfuck interpreter and compiler
 
 [![CI status](https://github.com/bmoneill/bfi/actions/workflows/make.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/make.yml).
 [![clang-format status](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml)
 
-This is an interpreter for the Turing-complete esoteric programming language
+This is an interpreter and compiler for the Turing-complete esoteric programming language
 brainfuck, written in C.
 
 ## Building
@@ -18,11 +18,19 @@ sudo make install
 ## Usage
 
 ```shell
-bfi [-dr] [file]
+bfi [-cCdrsv] [-o output_file] [-t tape_size] [file]
 ```
 
+* `-c`: Compile to native binary
+* `-C`: Compile to C
 * `-d`: Print tape pointer and instruction pointer whenever a `#` is encountered.
 * `-r`: Run in interactive REPL mode
+* `-s`: Disable interpretation of special characters (`#` and `@`)
+
+* `-o output_file`: Specify the output file (default: './a.out' for binaries, './a.out.c' for C source)
+* `-t tape_size`: Specify the size of the tape (default: 30000)
+
+If no file is specified, `bfi` will read source code from standard input.
 
 ## Screenshots
 
