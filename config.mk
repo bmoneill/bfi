@@ -11,5 +11,5 @@ CFLAGS   += -Wall -Wextra -Wpedantic -Werror
 CFLAGS   += -Wno-unused-parameter -Wno-unused-function -Wno-unused-variable -Wno-missing-field-initializers
 
 CPPFLAGS  = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 \
-           -D_FILE_OFFSET_BITS=64 -DVERSION="$(VERSION)"
+           -D_FILE_OFFSET_BITS=64 -DBF_VERSION="\"$(VERSION)\""
 LDFLAGS   = -s

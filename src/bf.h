@@ -1,6 +1,9 @@
 #ifndef BF_H
 #define BF_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #define BF_DEFAULT_COMPILER                  "gcc"
 #define BF_DEFAULT_COMPILE_FLAGS             "-O3 -s -ffast-math"
 #define BF_DEFAULT_TAPE_SIZE                 30000
@@ -9,8 +12,9 @@
 #define BF_FLAG_REPL                         2
 #define BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS 4
 
-#include <stddef.h>
-#include <stdint.h>
+#ifndef BF_VERSION
+#define BF_VERSION "unknown"
+#endif
 
 typedef struct {
     uint8_t flags;

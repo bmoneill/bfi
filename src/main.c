@@ -7,6 +7,7 @@
 #include <string.h>
 
 static void print_usage(const char*);
+static void print_version(const char*);
 
 /**
  * @brief Entry point.
@@ -20,7 +21,7 @@ int main(int argc, char* argv[]) {
     params.input_max = BF_DEFAULT_INPUT_MAX;
     params.tape_size = BF_DEFAULT_TAPE_SIZE;
 
-    while ((opt = getopt(argc, argv, "cdrst:")) != -1) {
+    while ((opt = getopt(argc, argv, "cdrst:v")) != -1) {
         switch (opt) {
         case 'c': /* TODO */
             break;
@@ -36,6 +37,9 @@ int main(int argc, char* argv[]) {
         case 't':
             params.tape_size = atoi(optarg);
             break;
+        case 'v':
+            print_version(argv[0]);
+            return EXIT_SUCCESS;
         default:
             print_usage(argv[0]);
             return EXIT_FAILURE;
@@ -64,5 +68,9 @@ int main(int argc, char* argv[]) {
  * @param argv0 The name of the program as it was invoked.
  */
 static void print_usage(const char* argv0) {
-    fprintf(stderr, "usage: %s [-cdrs] [-t tapesize] [file]\n", argv0);
+    fprintf(stderr, "usage: %s [-cdrsv] [-t tapesize] [file]\n", argv0);
+}
+
+static void print_version(const char* argv0) {
+    fprintf(stderr, "%s %s\n", argv0, BF_VERSION);
 }
