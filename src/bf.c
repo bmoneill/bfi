@@ -27,7 +27,9 @@
 #define INITIAL_LOOP_SIZE        2048
 #define DEFAULT_INPUT_STACK_SIZE 16
 
-#define ERROR(s) fprintf(stderr, "Error: %s\n", s); exit(EXIT_FAILURE)
+#define ERROR(s)                                                                                   \
+    fprintf(stderr, "Error: %s\n", s);                                                             \
+    exit(EXIT_FAILURE)
 #define IN_REPL_MODE(b)                 ((b).flags & BF_FLAG_REPL)
 #define IN_DEBUG_MODE(b)                ((b).flags & BF_FLAG_DEBUG)
 #define SPECIAL_INSTRUCTIONS_ENABLED(b) (!((b).flags & BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS))
@@ -519,10 +521,10 @@ static void reset(bf_t* bf) {
     reset_loops(bf);
     memset(bf->prog, 0, bf->prog_len * sizeof(char));
     memset(bf->tape, 0, bf->tape_size * sizeof(uint8_t));
-    bf->prog_len  = 0;
-    bf->ip        = 0;
-    bf->tp        = 0;
-    bf->tp_max    = 0;
+    bf->prog_len = 0;
+    bf->ip       = 0;
+    bf->tp       = 0;
+    bf->tp_max   = 0;
 }
 
 /**
