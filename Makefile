@@ -2,7 +2,7 @@ include config.mk
 
 BIN=bfi
 
-SRC=bfi.c
+SRC=src/bf.c src/main.c
 
 all: $(BIN)
 
