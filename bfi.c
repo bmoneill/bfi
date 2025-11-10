@@ -345,6 +345,7 @@ static void run_file(void) {
 static void run_repl(void) {
     char input[INPUT_MAX];
     prog = (char*) malloc(INPUT_MAX);
+    size_t prog_size = INPUT_MAX;
 
     if (!prog) {
         fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
@@ -357,7 +358,16 @@ static void run_repl(void) {
         fgets(input, INPUT_MAX, stdin);
         program_len_old = program_len;
         program_len += strlen(input);
+        if (program_len > prog_size) {
+            prog_size *= 2;
+            prog = realloc(prog, prog_size);
+            if (!prog) {
+                fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
         snprintf(prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
+        if (prog)
         build_loops();
 
         file_index_t index;
