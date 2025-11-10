@@ -1,11 +1,15 @@
-VERSION  = 0.2
+VERSION  = $(shell git describe --tags --always)
 
 PREFIX   = /usr/local
 
-CC       = cc
+CC       = gcc
 LD       = $(CC)
 
-CFLAGS   = -O2 -Werror -std=c99 -pedantic
-CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 \
+CFLAGS    = -std=c89 -pedantic -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_FILE_OFFSET_BITS=64
+CFLAGS   += -O3 -ffast-math
+CFLAGS   += -Wall -Wextra -Wpedantic -Werror
+CFLAGS   += -Wno-unused-parameter -Wno-unused-function -Wno-unused-variable -Wno-missing-field-initializers
+
+CPPFLAGS  = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 \
            -D_FILE_OFFSET_BITS=64 -DVERSION="$(VERSION)"
-LDFLAGS  = -s
+LDFLAGS   = -s

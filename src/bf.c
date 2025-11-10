@@ -30,7 +30,7 @@
  * @brief Structure to represent an index in a file (or user input).
  */
 typedef struct {
-    int idx; // only used for build_loops()
+    int idx; /* only used for build_loops() */
     int line;
     int line_idx;
 } file_index_t;
@@ -87,9 +87,7 @@ static int  load_file(bf_t*, const char*);
 static void reset(bf_t*);
 static void reset_loops(bf_t*);
 
-
-void bf_compile(const char* input, bf_parameters_t params) {
-}
+void        bf_compile(const char* input, bf_parameters_t params) {}
 
 /**
  * @brief Runs the brainfuck program loaded from a file.
@@ -99,14 +97,15 @@ void bf_compile(const char* input, bf_parameters_t params) {
  * until the end of the program is reached.
  */
 void bf_run_file(const char* path, bf_parameters_t params) {
-    bf_t bf;
+    bf_t         bf;
+    file_index_t idx;
+
     init_bf(&bf, params);
     load_file(&bf, path);
-
-    file_index_t idx;
     idx.line     = 1;
     idx.line_idx = 0;
     build_loops(&bf);
+
     for (bf.ip = 0; bf.ip < bf.prog_len; bf.ip++) {
         interpret(&bf, &idx);
     }
@@ -121,11 +120,15 @@ void bf_run_file(const char* path, bf_parameters_t params) {
  * This allows for interactive execution of brainfuck code.
  */
 void bf_run_repl(bf_parameters_t params) {
-    bf_t bf;
+    bf_t         bf;
+    file_index_t index;
+    char*        input;
+    size_t       prog_len_old;
+
     init_bf(&bf, params);
 
     bf.prog_size = params.input_max;
-    char* input  = (char*) malloc(bf.prog_size + 1);
+    input        = (char*) malloc(bf.prog_size + 1);
 
     bf.prog      = (char*) malloc(bf.prog_size + 1);
     if (!bf.prog) {
@@ -139,9 +142,9 @@ void bf_run_repl(bf_parameters_t params) {
             break;
         }
 
-        size_t prog_len_old = bf.prog_len;
+        prog_len_old = bf.prog_len;
         bf.prog_len += strlen(input);
-        if (bf.prog_len > bf.prog_size) {
+        if ((size_t) bf.prog_len > bf.prog_size) {
             bf.prog_size *= 2;
             bf.prog = realloc(bf.prog, bf.prog_size);
             if (!bf.prog) {
@@ -154,7 +157,6 @@ void bf_run_repl(bf_parameters_t params) {
         reset_loops(&bf);
         build_loops(&bf);
 
-        file_index_t index;
         index.line     = 1;
         index.line_idx = 0;
 
@@ -179,16 +181,24 @@ void bf_run_repl(bf_parameters_t params) {
  *       it prints an error message and terminates the program using exit(EXIT_FAILURE).
  */
 static void build_loops(bf_t* bf) {
-    bf->loops_len            = 0;
-    bf->loops_size           = INITIAL_LOOP_SIZE;
-    bf->loops                = malloc(sizeof(loop_t) * INITIAL_LOOP_SIZE);
-    file_index_t* stack      = malloc(sizeof(file_index_t) * INITIAL_LOOP_SIZE);
-    int           stack_top  = 0;
-    int           stack_size = INITIAL_LOOP_SIZE;
-    int           line       = 1;
-    int           line_idx   = 0;
+    file_index_t* stack;
+    file_index_t  start;
+    int           stack_top;
+    int           stack_size;
+    int           line;
+    int           line_idx;
+    int           i;
 
-    for (int i = 0; i < bf->prog_len; i++) {
+    stack          = malloc(sizeof(file_index_t) * INITIAL_LOOP_SIZE);
+    stack_top      = 0;
+    stack_size     = INITIAL_LOOP_SIZE;
+    line           = 1;
+    line_idx       = 0;
+    bf->loops_len  = 0;
+    bf->loops_size = INITIAL_LOOP_SIZE;
+    bf->loops      = malloc(sizeof(loop_t) * INITIAL_LOOP_SIZE);
+
+    for (i = 0; i < bf->prog_len; i++) {
         line_idx++;
         if (bf->prog[i] == '[') {
             if (stack_top >= stack_size) {
@@ -205,7 +215,7 @@ static void build_loops(bf_t* bf) {
                 free(stack);
                 exit(EXIT_FAILURE);
             }
-            file_index_t start                    = stack[--stack_top];
+            start                                 = stack[--stack_top];
             bf->loops[bf->loops_len].start        = start;
             bf->loops[bf->loops_len].end.idx      = i;
             bf->loops[bf->loops_len].end.line     = line;
@@ -233,6 +243,8 @@ static void build_loops(bf_t* bf) {
  * tape pointer, instruction pointer, and memory map.
  */
 static void diagnose(bf_t* bf, file_index_t* idx) {
+    int i;
+
     fprintf(stderr,
             "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n",
             idx->line,
@@ -240,8 +252,8 @@ static void diagnose(bf_t* bf, file_index_t* idx) {
             bf->tp,
             bf->ip);
 
-    printf("Memory map:\n");
-    for (int i = 0; i < bf->tp_max; i++) {
+    fprintf(stderr, "Memory map:\n");
+    for (i = 0; i < bf->tp_max; i++) {
         fprintf(stderr, "%d: %d\n", i, bf->tape[i]);
     }
 }
@@ -278,9 +290,11 @@ static void init_bf(bf_t* bf, bf_parameters_t params) {
  *  and performs the corresponding operation on the tape.
  */
 static void interpret(bf_t* bf, file_index_t* index) {
+    int  i;
     char c;
-    bool receiving = true;
+    bool receiving;
 
+    receiving = true;
     index->line_idx++;
     switch (bf->prog[bf->ip]) {
     case '+':
@@ -291,7 +305,7 @@ static void interpret(bf_t* bf, file_index_t* index) {
         break;
     case '>':
         bf->tp++;
-        if (bf->tp > bf->tape_size) {
+        if ((size_t) bf->tp > bf->tape_size) {
             fprintf(stderr,
                     "Warning (%d,%d): Tape pointer overflow. Tape pointer set to zero.\n",
                     index->line,
@@ -315,7 +329,7 @@ static void interpret(bf_t* bf, file_index_t* index) {
         if (receiving) {
             c = fgetc(stdin);
             if (c == EOF) {
-                c         = 0; // EOF will overflow on uint8_t
+                c         = 0; /* EOF will overflow on uint8_t */
                 receiving = false;
             }
         }
@@ -326,7 +340,7 @@ static void interpret(bf_t* bf, file_index_t* index) {
         break;
     case '[':
         if (!bf->tape[bf->tp]) {
-            for (int i = 0; i < bf->loops_len; i++) {
+            for (i = 0; i < bf->loops_len; i++) {
                 if (bf->loops[i].start.idx == bf->ip) {
                     bf->ip          = bf->loops[i].end.idx;
                     index->line     = bf->loops[i].end.line;
@@ -337,7 +351,7 @@ static void interpret(bf_t* bf, file_index_t* index) {
         break;
     case ']':
         if (bf->tape[bf->tp]) {
-            for (int i = 0; i < bf->loops_len; i++) {
+            for (i = 0; i < bf->loops_len; i++) {
                 if (bf->loops[i].end.idx == bf->ip) {
                     bf->ip          = bf->loops[i].start.idx;
                     index->line     = bf->loops[i].start.line;
@@ -379,14 +393,14 @@ static void interpret(bf_t* bf, file_index_t* index) {
  *        The caller is responsible for freeing the allocated memory.
  */
 static int load_file(bf_t* bf, const char* path) {
-    FILE* f = fopen(path, "r");
-    if (f) {
+    FILE* f;
+
+    if ((f = fopen(path, "r"))) {
         fseek(f, 0, SEEK_END);
         bf->prog_len = ftell(f);
         fseek(f, 0, SEEK_SET);
 
-        bf->prog = (char*) malloc(bf->prog_len);
-        if (bf->prog) {
+        if ((bf->prog = (char*) malloc(bf->prog_len))) {
             fread(bf->prog, 1, bf->prog_len, f);
         } else {
             fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
@@ -401,15 +415,6 @@ static int load_file(bf_t* bf, const char* path) {
 
     return 0;
 }
-
-/**
- * @brief Loads flags into the brainfuck program state.
- *
- * This function loads the flags from the provided parameters into the brainfuck program state.
- *
- * @param bf Pointer to the brainfuck program state.
- * @param parameters The parameters containing the flags to be loaded.
- */
 
 /**
  * @brief Resets the brainfuck program state.

@@ -14,9 +14,11 @@ static void print_usage(const char*);
 int main(int argc, char* argv[]) {
     char*           path = NULL;
     int             opt;
+    bf_parameters_t params;
 
-    bf_parameters_t params
-        = { .flags = 0, .input_max = BF_DEFAULT_INPUT_MAX, .tape_size = BF_DEFAULT_TAPE_SIZE };
+    params.flags     = 0;
+    params.input_max = BF_DEFAULT_INPUT_MAX;
+    params.tape_size = BF_DEFAULT_TAPE_SIZE;
 
     while ((opt = getopt(argc, argv, "cdrst:")) != -1) {
         switch (opt) {
