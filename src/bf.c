@@ -11,17 +11,19 @@
  * LICENSE.
  */
 
-#define MAX_LOOPS        2048
-#define TAPE_SIZE        30000
-#define INPUT_MAX        1024
-#define INPUT_STACK_SIZE 16
+#include "bf.h"
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+
+#define LOOPS            2048
+#define TAPE_SIZE        30000
+#define INPUT_MAX        1024
+#define INPUT_STACK_SIZE 16
+#define FLAG_DEBUG       1
+#define FLAG_REPL        2
 
 /**
  * @brief Structure to represent an index in a file (or user input).
@@ -45,74 +47,42 @@ typedef struct {
     file_index_t end;
 } loop_t;
 
-typedef struct {
-    char** stack;
-    int    size;
-    int    top;
-} stack_t;
-
-/* Flags */
-bool debug = false;
-bool repl  = false;
-
-/* Global interpreter variables */
-char*       prog;
-uint8_t     tape[TAPE_SIZE];
-int         ip     = 0;
-int         tp     = 0;
-int         tp_max = 0;
-loop_t      loops[MAX_LOOPS];
-int         prog_len;
-int         num_loops;
-
-static void build_loops(void);
-static void diagnose(file_index_t*);
-static void interpret(file_index_t*);
-static int  load_file(const char*);
-static void print_err(const char*);
-static void print_usage(const char*);
-static void run_file(void);
-static void run_repl(void);
-
 /**
- * @brief Entry point.
+ * @brief Structure to represent a brainfuck interpreter.
+ * @param flags Flags for the interpreter.
+ * @param prog Pointer to the brainfuck program string.
+ * @param prog_len Length of the brainfuck program string.
+ * @param prog_size Size of the brainfuck program string.
+ * @param tape Pointer to the tape array.
+ * @param tape_size Size of the tape array.
+ * @param ip Instruction pointer.
+ * @param tp Data pointer.
+ * @param tp_max Maximum data pointer value.
+ * @param loops Pointer to the loop array.
+ * @param loops_len Length of the loop array.
+ * @param loops_size Size of the loop array.
  */
-int main(int argc, char* argv[]) {
-    char* path = NULL;
-    for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == '-') {
-            for (int j = 1; j < strlen(argv[i]); j++) {
-                switch (argv[i][j]) {
-                case 'd':
-                    debug = true;
-                    break;
-                case 'r':
-                    repl = true;
-                    break;
-                }
-            }
-        } else {
-            if (path == NULL) {
-                path = argv[i];
-            } else {
-                print_usage(argv[0]);
-                return EXIT_FAILURE;
-            }
-        }
-    }
+typedef struct {
+    int      flags;
+    char*    prog;
+    int      prog_len;
+    size_t   prog_size;
+    uint8_t* tape;
+    int      tape_size;
+    int      ip;
+    int      tp;
+    int      tp_max;
+    loop_t*  loops;
+    size_t   loops_len;
+    int      loops_size;
+} bf_t;
 
-    if (!repl && path) {
-        load_file(path);
-        run_file();
-    } else if (repl && !path) {
-        run_repl();
-    } else {
-        print_usage(argv[0]);
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
+static void build_loops(bf_t*);
+static void diagnose(bf_t*, file_index_t*);
+static void free_brainfuck(bf_t*);
+static void interpret(bf_t*, file_index_t*);
+static int  load_file(bf_t*, const char*);
+static void reset(bf_t*);
 
 /**
  * @brief Builds the loop structure for the brainfuck interpreter.
@@ -125,69 +95,86 @@ int main(int argc, char* argv[]) {
  * @note This function does not return a value. If an error occurs (such as exceeding MAX_LOOPS),
  *       it prints an error message and terminates the program using exit(EXIT_FAILURE).
  */
-static void build_loops(void) {
-    num_loops = 0;
-    file_index_t stack[MAX_LOOPS];
-    int          stack_top = 0;
-    int          line      = 1;
-    int          line_idx  = 0;
+void build_loops(bf_t* bf) {
+    bf->loops_len            = 0;
+    bf->loops_size           = INITIAL_LOOP_SIZE;
+    bf->loops                = malloc(sizeof(loop_t) * INITIAL_LOOP_SIZE);
+    file_index_t* stack      = malloc(sizeof(file_index_t) * INITIAL_LOOP_SIZE);
+    int           stack_top  = 0;
+    int           stack_size = INITIAL_LOOP_SIZE;
+    int           line       = 1;
+    int           line_idx   = 0;
 
-    for (int i = 0; i < prog_len; i++) {
+    for (int i = 0; i < bf->prog_len; i++) {
         line_idx++;
-        if (prog[i] == '[') {
-            if (stack_top >= MAX_LOOPS) {
-                fprintf(stderr,
-                        "Error (%d,%d): Too many loops (max = %d).",
-                        line,
-                        line_idx,
-                        MAX_LOOPS);
-                exit(EXIT_FAILURE);
+        if (bf->prog[i] == '[') {
+            if (stack_top >= stack_size) {
+                stack_size *= 2;
+                stack = realloc(stack, sizeof(file_index_t) * stack_size);
             }
             stack[stack_top].idx      = i;
             stack[stack_top].line     = line;
             stack[stack_top].line_idx = line_idx;
             stack_top++;
-        } else if (prog[i] == ']') {
+        } else if (bf->prog[i] == ']') {
             if (stack_top <= 0) {
                 fprintf(stderr, "Error (%d,%d): Unmatched closing bracket ']'.\n", line, line_idx);
                 exit(EXIT_FAILURE);
             }
-            file_index_t start = stack[--stack_top];
-            if (num_loops >= MAX_LOOPS) {
-                fprintf(stderr,
-                        "Error (%d,%d): Too many loops (max = %d).",
-                        line,
-                        line_idx,
-                        MAX_LOOPS);
-                exit(EXIT_FAILURE);
-            }
-            loops[num_loops].start        = start;
-            loops[num_loops].end.idx      = i;
-            loops[num_loops].end.line     = line;
-            loops[num_loops].end.line_idx = line_idx;
-            num_loops++;
-        } else if (prog[i] == '\n') {
+            file_index_t start                    = stack[--stack_top];
+            bf->loops[bf->loops_len].start        = start;
+            bf->loops[bf->loops_len].end.idx      = i;
+            bf->loops[bf->loops_len].end.line     = line;
+            bf->loops[bf->loops_len].end.line_idx = line_idx;
+            bf->loops_len++;
+        } else if (bf->prog[i] == '\n') {
             line++;
             line_idx = 0;
         }
     }
+
     if (stack_top != 0) {
         fprintf(stderr, "Error (%d,%d): Unmatched opening bracket '['.\n", line, line_idx);
         exit(EXIT_FAILURE);
     }
 }
 
-static void diagnose(file_index_t* idx) {
+/**
+ * @brief Diagnoses the brainfuck program.
+ *
+ * This function prints the current state of the brainfuck program, including the line number,
+ * tape pointer, instruction pointer, and memory map.
+ */
+void diagnose(bf_t* bf, file_index_t* idx) {
     fprintf(stderr,
             "Line: %d,%d\nTape pointer: %d\nInstruction pointer: %d\n",
             idx->line,
             idx->line_idx,
-            tp,
-            ip);
+            bf->tp,
+            bf->ip);
 
-    /* print memory map */
-    for (int i = 0; i < tp_max; i++) {
-        fprintf(stderr, "%d: %d\n", i, tape[i]);
+    printf("Memory map:\n");
+    for (int i = 0; i < bf->tp_max; i++) {
+        fprintf(stderr, "%d: %d\n", i, bf->tape[i]);
+    }
+}
+
+/**
+ * @brief Frees the memory allocated for the brainfuck program.
+ * @param bf Pointer to the brainfuck program.
+ */
+void free_brainfuck(bf_t* bf) {
+    if (bf) {
+        if (bf->prog) {
+            free(bf->prog);
+        }
+        if (bf->tape) {
+            free(bf->tape);
+        }
+        if (bf->loops) {
+            free(bf->loops);
+        }
+        free(bf);
     }
 }
 
@@ -197,38 +184,38 @@ static void diagnose(file_index_t* idx) {
  *  This function reads the current instruction pointed to by the instruction pointer (ip)
  *  and performs the corresponding operation on the tape.
  */
-static void interpret(file_index_t* index) {
+void interpret(bf_t* bf, file_index_t* index) {
     char c;
     bool receiving = true;
 
     index->line_idx++;
-    switch (prog[ip]) {
+    switch (bf->prog[bf->ip]) {
     case '+':
-        tape[tp]++;
+        bf->tape[bf->tp]++;
         break;
     case '-':
-        tape[tp]--;
+        bf->tape[bf->tp]--;
         break;
     case '>':
-        tp++;
-        if (tp > TAPE_SIZE) {
+        bf->tp++;
+        if (bf->tp > bf->tape_size) {
             fprintf(stderr,
                     "Warning (%d,%d): Tape pointer overflow. Tape pointer set to zero.\n",
                     index->line,
                     index->line_idx);
-            tp = 0;
-        } else if (tp > tp_max) {
-            tp_max = tp;
+            bf->tp = 0;
+        } else if (bf->tp > bf->tp_max) {
+            bf->tp_max = bf->tp;
         }
         break;
     case '<':
-        tp--;
-        if (tp < 0) {
+        bf->tp--;
+        if (bf->tp < 0) {
             fprintf(stderr,
                     "Warning (%d,%d): Tape pointer underflow. Tape pointer set to zero.\n",
                     index->line,
                     index->line_idx);
-            tp = 0;
+            bf->tp = 0;
         }
         break;
     case ',':
@@ -239,36 +226,41 @@ static void interpret(file_index_t* index) {
                 receiving = false;
             }
         }
-        tape[tp] = c;
+        bf->tape[bf->tp] = c;
         break;
     case '.':
-        putchar(tape[tp]);
+        putchar(bf->tape[bf->tp]);
         break;
     case '[':
-        if (!tape[tp]) {
-            for (int i = 0; i < num_loops; i++) {
-                if (loops[i].start.idx == ip) {
-                    ip              = loops[i].end.idx;
-                    index->line     = loops[i].end.line;
-                    index->line_idx = loops[i].end.line_idx;
+        if (!bf->tape[bf->tp]) {
+            for (int i = 0; i < bf->loops_len; i++) {
+                if (bf->loops[i].start.idx == bf->ip) {
+                    bf->ip          = bf->loops[i].end.idx;
+                    index->line     = bf->loops[i].end.line;
+                    index->line_idx = bf->loops[i].end.line_idx;
                 }
             }
         }
         break;
     case ']':
-        if (tape[tp]) {
-            for (int i = 0; i < num_loops; i++) {
-                if (loops[i].end.idx == ip) {
-                    ip              = loops[i].start.idx;
-                    index->line     = loops[i].start.line;
-                    index->line_idx = loops[i].start.line_idx;
+        if (bf->tape[bf->tp]) {
+            for (int i = 0; i < bf->loops_len; i++) {
+                if (bf->loops[i].end.idx == bf->ip) {
+                    bf->ip          = bf->loops[i].start.idx;
+                    index->line     = bf->loops[i].start.line;
+                    index->line_idx = bf->loops[i].start.line_idx;
                 }
             }
         }
         break;
     case '#':
-        if (debug) {
-            diagnose(index);
+        if (IS_DEBUG_MODE(*bf)) {
+            diagnose(bf, index);
+        }
+        break;
+    case '@':
+        if (IS_REPL_MODE(*bf)) {
+            reset(bf);
         }
         break;
     case '\n':
@@ -293,16 +285,16 @@ static void interpret(file_index_t* index) {
  *        The function allocates memory for the program and reads the entire file into this buffer.
  *        The caller is responsible for freeing the allocated memory.
  */
-static int load_file(const char* path) {
+int load_file(bf_t* bf, const char* path) {
     FILE* f = fopen(path, "r");
     if (f) {
         fseek(f, 0, SEEK_END);
-        prog_len = ftell(f);
+        bf->prog_len = ftell(f);
         fseek(f, 0, SEEK_SET);
 
-        prog = (char*) malloc(prog_len);
-        if (prog) {
-            fread(prog, 1, prog_len, f);
+        bf->prog = (char*) malloc(bf->prog_len);
+        if (bf->prog) {
+            fread(bf->prog, 1, bf->prog_len, f);
         } else {
             fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
             fclose(f);
@@ -322,7 +314,18 @@ static int load_file(const char* path) {
  *
  * @param argv0 The name of the program as it was invoked.
  */
-static void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [file]\n", argv0); }
+void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [file]\n", argv0); }
+
+void reset(bf_t* bf) {
+    memset(bf->prog, 0, bf->prog_len * sizeof(char));
+    memset(bf->tape, 0, bf->tape_size * sizeof(uint8_t));
+    memset(bf->loops, 0, bf->loops_len);
+    bf->prog_len  = 0;
+    bf->loops_len = 0;
+    bf->ip        = 0;
+    bf->tp        = 0;
+    bf->tp_max    = 0;
+}
 
 /**
  * @brief Runs the brainfuck program loaded from a file.
@@ -331,16 +334,16 @@ static void print_usage(const char* argv0) { fprintf(stderr, "usage: %s [-dr] [f
  * then iterates through the program instructions, interpreting each one
  * until the end of the program is reached.
  */
-static void run_file(void) {
+void run_file(bf_t* bf) {
     file_index_t idx;
     idx.line     = 1;
     idx.line_idx = 0;
 
-    build_loops();
-    for (ip = 0; ip < prog_len; ip++) {
-        interpret(&idx);
+    build_loops(bf);
+    for (bf->ip = 0; bf->ip < bf->prog_len; bf->ip++) {
+        interpret(bf, &idx);
     }
-    free(prog);
+    free(bf->prog);
 }
 
 /**
@@ -350,13 +353,13 @@ static void run_file(void) {
  * and interprets the brainfuck instructions until the user terminates the program.
  * This allows for interactive execution of brainfuck code.
  */
-static void run_repl(void) {
+void run_repl(void) {
+    bf_t bf;
     char input[INPUT_MAX];
-    prog             = (char*) malloc(INPUT_MAX);
+    bf->prog         = (char*) malloc(INPUT_MAX);
     size_t prog_size = INPUT_MAX;
 
-
-    if (!prog) {
+    if (!bf->prog) {
         fprintf(stderr, "Error: Cannot allocate memory for program storage.\n");
         exit(EXIT_FAILURE);
     }
@@ -368,28 +371,28 @@ static void run_repl(void) {
             break;
         }
 
-        program_len_old = prog_len;
-        prog_len += strlen(input);
-        if (prog_len > prog_size) {
+        program_len_old = bf->prog_len;
+        bf->prog_len += strlen(input);
+        if (bf->prog_len > prog_size) {
             prog_size *= 2;
-            prog = realloc(prog, prog_size);
-            if (!prog) {
+            bf->prog = realloc(bf->prog, prog_size);
+            if (!bf->prog) {
                 fprintf(stderr, "Error: Cannot reallocate memory for program storage.\n");
                 exit(EXIT_FAILURE);
             }
         }
-        snprintf(prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
-        if (prog)
-            build_loops();
+        snprintf(bf->prog + program_len_old, INPUT_MAX - program_len_old, "%s", input);
+        if (bf->prog)
+            build_loops(bf->prog);
 
         file_index_t index;
         index.line     = 1;
         index.line_idx = 0;
 
-        for (; ip < prog_len; ip++) {
-            interpret(&index);
+        for (; bf->ip < bf->prog_len; bf->ip++) {
+            interpret(bf, &index);
         }
     }
 
-    free(prog);
+    free_brainfuck(bf);
 }
