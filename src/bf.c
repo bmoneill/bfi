@@ -119,7 +119,6 @@ void bf_compile(const char* input_path, const char* output_path, bf_parameters_t
     int   depth;
 
     /**** Set up files ****/
-
     if (!input_path) {
         input = stdin;
     } else if (!(input = fopen(input_path, "r"))) {
@@ -137,7 +136,6 @@ void bf_compile(const char* input_path, const char* output_path, bf_parameters_t
     }
 
     /*** Actual compilation ***/
-
     init_tokens();
     depth = 0;
     fprintf(output, COMPILE_HEAD, params.tape_size);
