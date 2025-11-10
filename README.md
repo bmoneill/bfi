@@ -1,9 +1,9 @@
-# bfi: brainfuck interpreter and compiler
+# bfi: a brainfuck interpreter, compiler, and REPL
 
 [![CI status](https://github.com/bmoneill/bfi/actions/workflows/make.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/make.yml).
 [![clang-format status](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfi/actions/workflows/clang-format.yml)
 
-This is an interpreter and compiler for the Turing-complete esoteric programming language
+This is an interpreter, compiler, and REPL for the Turing-complete esoteric programming language
 brainfuck, written in C.
 
 ## Building
