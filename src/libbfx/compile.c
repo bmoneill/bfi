@@ -8,7 +8,7 @@
 #define COMPILE_HEAD  "#include <stdio.h>\nint main(void) {unsigned char t[%ld];int p=0;"
 #define TMP_FILE_PATH "/tmp/bfx.c"
 
-static void init_tokens(void);
+static void        init_tokens(void);
 
 static const char* tokens[']' + 1];
 

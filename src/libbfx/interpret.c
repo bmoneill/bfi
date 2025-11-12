@@ -6,7 +6,7 @@
 
 static void diagnose(bfx_t*, bfx_file_index_t*);
 
-void bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
+void        bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
     size_t i;
     char   c;
     bool   receiving;
@@ -46,7 +46,7 @@ void bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
         if (receiving) {
             c = fgetc(stdin);
             if (c == EOF) {
-                c = 0;
+                c         = 0;
                 receiving = false;
             }
         }
