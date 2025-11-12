@@ -8,7 +8,7 @@
  * LICENSE.
  */
 
-#include "bf.h"
+#include "bfx.h"
 
 #include <getopt.h>
 #include <stdbool.h>

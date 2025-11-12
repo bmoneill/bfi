@@ -1,0 +1,50 @@
+project("libbfx" C)
+
+set(LIBRARY_NAME "bfx")
+set(LIBRARY_VERSION_MAJOR 0)
+set(LIBRARY_VERSION_STRING 0.0)
+
+include(GNUInstallDirs)
+
+set(LIBRARY_BASE_PATH ".")
+
+INCLUDE_DIRECTORIES (
+	"${LIBRARY_BASE_PATH}"
+)
+
+set(LIBRARY_PUBLIC_SRC
+	"${LIBRARY_BASE_PATH}/bfx.c"
+	"${LIBRARY_BASE_PATH}/compile.c"
+	"${LIBRARY_BASE_PATH}/interpret.c"
+)
+
+set(LIBRARY_PUBLIC_HEADERS
+	"${LIBRARY_BASE_PATH}/raycast/bfx.h"
+	"${LIBRARY_BASE_PATH}/raycast/compile.h"
+	"${LIBRARY_BASE_PATH}/raycast/interpret.h"
+)
+
+add_library (
+	${LIBRARY_NAME} SHARED ${LIBRARY_PUBLIC_SRC}
+)
+
+set_target_properties(
+	${BINARY_NAME} PROPERTIES
+	VERSION		${LIBRARY_VERSION_STRING}
+	SOVERSION	${LIBRARY_VERSION_MAJOR}
+	PUBLIC_HEADER  ${LIBRARY_PUBLIC_HEADERS}
+)
+
+
+# Compiler definitions
+ADD_DEFINITIONS("-g")
+if(TEST)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTEST")
+endif()
+
+# Library installation directives
+INSTALL (
+	TARGETS ${BINARY_NAME}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)

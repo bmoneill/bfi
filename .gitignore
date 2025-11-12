@@ -1,5 +1,23 @@
-bfi
-*.b
-*.tar.gz
+# Targets
+bfx-bin
+*.so
+*.a
+
+# Cmake
+CMakeFiles/
+*.cmake
+CMakeCache.txt
+DartConfiguration.tcl
+Makefile
+Testing
+
+# etc
+.clangd
+.zed
 a.out*
 vgcore*
+*.o
+*.so
+*.a
+*_runner.c
+*.tar.gz
