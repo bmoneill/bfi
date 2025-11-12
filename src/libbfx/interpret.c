@@ -46,7 +46,7 @@ void bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
         if (receiving) {
             c = fgetc(stdin);
             if (c == EOF) {
-
+                c = 0;
                 receiving = false;
             }
         }
