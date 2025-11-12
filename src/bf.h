@@ -1,5 +1,5 @@
 /**
- * @file bfi.h
+ * @file bf.h
  * @brief brainfuck interpreter header
  * @author Ben O'Neill <ben@oneill.sh>
  *

@@ -1,5 +1,5 @@
 /**
- * @file bfi.c
+ * @file bf.c
  * @brief brainfuck interpreter
  * @author Ben O'Neill <ben@oneill.sh>
  *
@@ -426,7 +426,7 @@ static void interpret(bf_t* bf, file_index_t* index) {
         if (receiving) {
             c = fgetc(stdin);
             if (c == EOF) {
-                c         = 0; /* EOF will overflow on uint8_t */
+
                 receiving = false;
             }
         }
