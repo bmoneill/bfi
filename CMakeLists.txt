@@ -12,16 +12,6 @@ execute_process(
 # Version
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBBFX_VERSION='\"${GIT_COMMIT_HASH}\"'")
 
-# C standard
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89 -pedantic -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_FILE_OFFSET_BITS=64")
-
-# Optimization
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ffast-math")
-
-# Warnings
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -Werror")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-unused-function -Wno-unused-variable -Wno-missing-field-initializers")
-
 function(Enable_Tests)
   set(TEST ON CACHE INTERNAL "")
 endfunction()

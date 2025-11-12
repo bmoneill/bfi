@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 /* Interpreter stuff */
 #define INITIAL_LOOP_SIZE        2048
