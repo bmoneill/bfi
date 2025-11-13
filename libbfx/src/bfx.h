@@ -109,6 +109,9 @@ typedef struct {
     char*       prog;
     size_t      prog_len;
     size_t      prog_size;
+    size_t      input_start;
+    size_t      input_ptr;
+    size_t      input_len;
     uint8_t*    tape;
     size_t      tape_size;
     int         ip;

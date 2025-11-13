@@ -213,10 +213,10 @@ static void free_bf(bfx_t* bf) {
  */
 static void init_bf(bfx_t* bf, bfx_parameters_t params) {
     memset(bf, 0, sizeof(bfx_t));
-    bf->flags     = params.flags;
-    bf->tape_size = params.tape_size;
-    bf->tape      = calloc(params.tape_size, sizeof(uint8_t));
-    bf->receiving = true;
+    bf->flags        = params.flags;
+    bf->tape_size    = params.tape_size;
+    bf->tape         = calloc(params.tape_size, sizeof(uint8_t));
+    bf->receiving    = true;
     bf->eof_behavior = params.eof_behavior;
 }
 
@@ -236,7 +236,8 @@ static void init_bf(bfx_t* bf, bfx_parameters_t params) {
  *        The caller is responsible for freeing the allocated memory.
  */
 static int load_file(bfx_t* bf, const char* path) {
-    FILE* f;
+    FILE*  f;
+    size_t i;
 
     if ((f = fopen(path, "r"))) {
         fseek(f, 0, SEEK_END);
@@ -259,6 +260,18 @@ static int load_file(bfx_t* bf, const char* path) {
     } else {
         fprintf(stderr, "Error: Cannot open file %s for reading.\n", path);
         return 1;
+    }
+
+    if (bf->flags & BFX_FLAG_SEPARATE_INPUT_AND_SOURCE) {
+        for (i = 0; i < bf->prog_len; i++) {
+            if (bf->prog[i] == '!') {
+                bf->input_start = i + 1;
+                bf->input_ptr   = bf->input_start;
+                bf->input_len   = bf->prog_len;
+                bf->prog[i]     = '\0';
+                bf->prog_len    = i;
+            }
+        }
     }
 
     return 0;

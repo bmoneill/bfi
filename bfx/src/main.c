@@ -30,18 +30,18 @@ static void print_version(const char*);
  * @brief Entry point.
  */
 int main(int argc, char* argv[]) {
-    int             opt;
+    int              opt;
     bfx_parameters_t params;
-    char*           path        = NULL;
-    char*           output_path = NULL;
-    bool            compile     = false;
+    char*            path        = NULL;
+    char*            output_path = NULL;
+    bool             compile     = false;
 
-    params.flags                = 0;
-    params.input_max            = BFX_DEFAULT_INPUT_MAX;
-    params.tape_size            = BFX_DEFAULT_TAPE_SIZE;
-    params.eof_behavior         = BFX_DEFAULT_EOF_BEHAVIOR;
+    params.flags                 = 0;
+    params.input_max             = BFX_DEFAULT_INPUT_MAX;
+    params.tape_size             = BFX_DEFAULT_TAPE_SIZE;
+    params.eof_behavior          = BFX_DEFAULT_EOF_BEHAVIOR;
 
-    while ((opt = getopt(argc, argv, "cCde:g:Go:Prst:vY")) != -1) {
+    while ((opt = getopt(argc, argv, "cCde:g:Gio:Prst:vY")) != -1) {
         switch (opt) {
         case 'c':
             compile = true;
@@ -64,6 +64,9 @@ int main(int argc, char* argv[]) {
             break;
         case 'G':
             printf("-%c Unimplemented.\n", opt);
+            break;
+        case 'i':
+            params.flags |= BFX_FLAG_SEPARATE_INPUT_AND_SOURCE;
             break;
         case 'o':
             output_path = optarg;
@@ -136,7 +139,7 @@ static int get_eof_behavior(const char* s) {
  */
 static void print_usage(const char* argv0) {
     fprintf(stderr,
-            "Usage: %s [-cCdGPrsvY] [-e eof_behavior] [-g start-end] [-o output_file] [-t "
+            "Usage: %s [-cCdGiPrsvY] [-e eof_behavior] [-g start-end] [-o output_file] [-t "
             "tape_size] [file]\n",
             argv0);
     fprintf(stderr, "Options:\n");
@@ -149,9 +152,10 @@ static void print_usage(const char* argv0) {
             " -d:\t\t\tEnable debugging mode (# will print the line number, tape pointer,\n");
     fprintf(stderr, "    \t\t\tinstruction pointer, and a memory dump.\n");
     fprintf(stderr, " -G:\t\t\tEnable Grin language support\n");
+    fprintf(stderr, " -i:\t\t\tSeparate code from input using !\n");
     fprintf(stderr, " -P:\t\t\tEnable pbrain language support\n");
     fprintf(stderr, " -r:\t\t\tEnable REPL mode\n");
-    fprintf(stderr, " -s:\t\t\tEnable ! instruction (contents after ! will be used as input) \n");
+    fprintf(stderr, " -s:\t\t\tDisable special instructions\n");
     fprintf(stderr, " -v:\t\t\tPrint version information\n");
     fprintf(stderr, " -Y:\t\t\tEnable brainfork language support\n");
     fprintf(stderr, "\n");

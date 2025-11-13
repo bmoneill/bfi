@@ -141,8 +141,18 @@ static void op_loop_end(bfx_t* bf, bfx_file_index_t* index) {
 
 static void op_getchar(bfx_t* bf) {
     char c;
-    if (bf->receiving) {
+    if (bf->flags & BFX_FLAG_SEPARATE_INPUT_AND_SOURCE) {
+        if (bf->input_ptr < bf->input_len) {
+            c = bf->prog[bf->input_ptr];
+            bf->input_ptr++;
+        } else {
+            c = EOF;
+        }
+    } else {
         c = fgetc(stdin);
+    }
+
+    if (bf->receiving) {
         if (c == EOF) {
             bf->receiving = false;
         } else {
