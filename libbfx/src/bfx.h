@@ -11,6 +11,7 @@
 #ifndef BFX_H
 #define BFX_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -20,6 +21,18 @@
 
 #ifndef BFX_DEFAULT_COMPILE_FLAGS
 #define BFX_DEFAULT_COMPILE_FLAGS "-O3 -s -ffast-math"
+#endif
+
+#ifndef BFX_DEFAULT_INPUT_MAX
+#define BFX_DEFAULT_INPUT_MAX 1024
+#endif
+
+#ifndef BFX_DEFAULT_TAPE_SIZE
+#define BFX_DEFAULT_TAPE_SIZE 30000
+#endif
+
+#ifndef BFX_INITIAL_LOOP_SIZE
+#define BFX_INITIAL_LOOP_SIZE 2048
 #endif
 
 #ifndef BFX_VERSION
@@ -41,8 +54,6 @@
 #define BFX_FLAG_SEPARATE_INPUT_AND_SOURCE    256
 
 #define BFX_DEFAULT_EOF_BEHAVIOR BFX_EOF_BEHAVIOR_ZERO
-#define BFX_DEFAULT_INPUT_MAX    1024
-#define BFX_DEFAULT_TAPE_SIZE    30000
 
 #define BFX_ERROR(s)                                                                               \
     fprintf(stderr, "libbfx: Error: %s\n", s);                                                     \
@@ -79,6 +90,7 @@ typedef struct {
 /**
  * @brief Structure to represent a brainfuck interpreter.
  * @param flags Flags for the interpreter.
+ * @param receiving If the interpreter is receiving input.
  * @param prog Pointer to the brainfuck program string.
  * @param prog_len Length of the brainfuck program string.
  * @param prog_size Size of the brainfuck program string.
@@ -93,6 +105,7 @@ typedef struct {
  */
 typedef struct {
     int         flags;
+    bool        receiving;
     char*       prog;
     size_t      prog_len;
     size_t      prog_size;
@@ -104,6 +117,7 @@ typedef struct {
     bfx_loop_t* loops;
     size_t      loops_len;
     size_t      loops_size;
+    int         eof_behavior;
 } bfx_t;
 
 /**
@@ -118,9 +132,9 @@ typedef struct {
     uint16_t flags;
     size_t   tape_size;
     size_t   input_max;
-    int      eof_behavior;
     int      graphics_start;
     int      graphics_end;
+    int      eof_behavior;
 } bfx_parameters_t;
 
 void bfx_reset(bfx_t*);

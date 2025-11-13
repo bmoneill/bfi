@@ -5,9 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define COMPILE_HEAD  "#include <stdio.h>\nint main(void) {unsigned char t[%ld];int p=0;"
-#define TMP_FILE_PATH "/tmp/bfx.c"
-
 static void        init_tokens(void);
 
 static const char* tokens[']' + 1];
@@ -44,7 +41,7 @@ void bfx_compile(const char* input_path, const char* output_path, bfx_parameters
         output_path = binary_output ? "./a.out" : "./a.out.c";
     }
 
-    if (binary_output && !(output = fopen(TMP_FILE_PATH, "w"))) {
+    if (binary_output && !(output = fopen(BFX_TMP_FILE_PATH, "w"))) {
         BFX_ERROR("Failed to create temporary file");
     } else if (!(output = fopen(output_path, "w"))) {
         BFX_ERROR("Failed to open output file");
@@ -53,7 +50,7 @@ void bfx_compile(const char* input_path, const char* output_path, bfx_parameters
     /*** Actual compilation ***/
     init_tokens();
     depth = 0;
-    fprintf(output, COMPILE_HEAD, params.tape_size);
+    fprintf(output, BFX_COMPILE_HEAD, params.tape_size);
     while ((c = fgetc(input)) != EOF) {
         if (tokens[c]) {
             fprintf(output, "%s", tokens[c]);
@@ -76,9 +73,9 @@ void bfx_compile(const char* input_path, const char* output_path, bfx_parameters
                 BFX_DEFAULT_COMPILER,
                 BFX_DEFAULT_COMPILE_FLAGS,
                 output_path,
-                TMP_FILE_PATH);
+                BFX_TMP_FILE_PATH);
         sys_ret = system(cmd);
-        remove(TMP_FILE_PATH);
+        remove(BFX_TMP_FILE_PATH);
         if (sys_ret != 0) {
             BFX_ERROR("Failed to compile program");
         }

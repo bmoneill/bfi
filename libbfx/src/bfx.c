@@ -20,10 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Interpreter stuff */
-#define INITIAL_LOOP_SIZE        2048
-#define DEFAULT_INPUT_STACK_SIZE 16
-
 static void build_loops(bfx_t*);
 static void free_bf(bfx_t*);
 static void init_bf(bfx_t*, bfx_parameters_t);
@@ -142,14 +138,14 @@ static void build_loops(bfx_t* bf) {
     int               line_idx;
     size_t            i;
 
-    stack          = malloc(sizeof(bfx_file_index_t) * INITIAL_LOOP_SIZE);
+    stack          = malloc(sizeof(bfx_file_index_t) * BFX_INITIAL_LOOP_SIZE);
     stack_top      = 0;
-    stack_size     = INITIAL_LOOP_SIZE;
+    stack_size     = BFX_INITIAL_LOOP_SIZE;
     line           = 1;
     line_idx       = 0;
     bf->loops_len  = 0;
-    bf->loops_size = INITIAL_LOOP_SIZE;
-    bf->loops      = malloc(sizeof(bfx_loop_t) * INITIAL_LOOP_SIZE);
+    bf->loops_size = BFX_INITIAL_LOOP_SIZE;
+    bf->loops      = malloc(sizeof(bfx_loop_t) * BFX_INITIAL_LOOP_SIZE);
 
     for (i = 0; i < bf->prog_len; i++) {
         line_idx++;
@@ -220,6 +216,8 @@ static void init_bf(bfx_t* bf, bfx_parameters_t params) {
     bf->flags     = params.flags;
     bf->tape_size = params.tape_size;
     bf->tape      = calloc(params.tape_size, sizeof(uint8_t));
+    bf->receiving = true;
+    bf->eof_behavior = params.eof_behavior;
 }
 
 /**

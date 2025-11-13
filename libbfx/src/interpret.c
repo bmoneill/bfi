@@ -1,4 +1,5 @@
 #include "interpret.h"
+#include "bfx.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -6,76 +7,44 @@
 
 static void diagnose(bfx_t*, bfx_file_index_t*);
 
+static void op_inc_tp(bfx_t*, bfx_file_index_t*);
+static void op_dec_tp(bfx_t*, bfx_file_index_t*);
+static void op_inc_t(bfx_t*);
+static void op_dec_t(bfx_t*);
+static void op_loop_start(bfx_t*, bfx_file_index_t*);
+static void op_loop_end(bfx_t*, bfx_file_index_t*);
+static void op_getchar(bfx_t*);
+static void op_putchar(bfx_t*);
+
 void        bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
     size_t i;
     char   c;
-    bool   receiving;
 
-    receiving = true;
     index->line_idx++;
     switch (bf->prog[bf->ip]) {
     case '+':
-        bf->tape[bf->tp]++;
+        op_inc_t(bf);
         break;
     case '-':
-        bf->tape[bf->tp]--;
+        op_dec_t(bf);
         break;
     case '>':
-        bf->tp++;
-        if ((size_t) bf->tp > bf->tape_size) {
-            fprintf(stderr,
-                    "Warning (%d,%d): Tape pointer overflow. Tape pointer set to zero.\n",
-                    index->line,
-                    index->line_idx);
-            bf->tp = 0;
-        } else if (bf->tp > bf->tp_max) {
-            bf->tp_max = bf->tp;
-        }
+        op_inc_tp(bf, index);
         break;
     case '<':
-        bf->tp--;
-        if (bf->tp < 0) {
-            fprintf(stderr,
-                    "Warning (%d,%d): Tape pointer underflow. Tape pointer set to zero.\n",
-                    index->line,
-                    index->line_idx);
-            bf->tp = 0;
-        }
+        op_dec_tp(bf, index);
         break;
     case ',':
-        if (receiving) {
-            c = fgetc(stdin);
-            if (c == EOF) {
-                c         = 0;
-                receiving = false;
-            }
-        }
-        bf->tape[bf->tp] = c;
+        op_getchar(bf);
         break;
     case '.':
-        putchar(bf->tape[bf->tp]);
+        op_putchar(bf);
         break;
     case '[':
-        if (!bf->tape[bf->tp]) {
-            for (i = 0; i < bf->loops_len; i++) {
-                if (bf->loops[i].start.idx == bf->ip) {
-                    bf->ip          = bf->loops[i].end.idx;
-                    index->line     = bf->loops[i].end.line;
-                    index->line_idx = bf->loops[i].end.line_idx;
-                }
-            }
-        }
+        op_loop_start(bf, index);
         break;
     case ']':
-        if (bf->tape[bf->tp]) {
-            for (i = 0; i < bf->loops_len; i++) {
-                if (bf->loops[i].end.idx == bf->ip) {
-                    bf->ip          = bf->loops[i].start.idx;
-                    index->line     = bf->loops[i].start.line;
-                    index->line_idx = bf->loops[i].start.line_idx;
-                }
-            }
-        }
+        op_loop_end(bf, index);
         break;
     case '#':
         if (BFX_IN_DEBUG_MODE(*bf) && BFX_SPECIAL_INSTRUCTIONS_ENABLED(*bf)) {
@@ -115,3 +84,82 @@ static void diagnose(bfx_t* bf, bfx_file_index_t* idx) {
         fprintf(stderr, "%d: %d\n", i, bf->tape[i]);
     }
 }
+
+static void op_inc_tp(bfx_t* bf, bfx_file_index_t* index) {
+    bf->tp++;
+    if ((size_t) bf->tp > bf->tape_size) {
+        fprintf(stderr,
+                "Warning (%d,%d): Tape pointer overflow. Tape pointer set to zero.\n",
+                index->line,
+                index->line_idx);
+        bf->tp = 0;
+    } else if (bf->tp > bf->tp_max) {
+        bf->tp_max = bf->tp;
+    }
+}
+
+static void op_dec_tp(bfx_t* bf, bfx_file_index_t* index) {
+    bf->tp--;
+    if (bf->tp < 0) {
+        fprintf(stderr,
+                "Warning (%d,%d): Tape pointer underflow. Tape pointer set to zero.\n",
+                index->line,
+                index->line_idx);
+        bf->tp = 0;
+    }
+}
+
+static void op_inc_t(bfx_t* bf) { bf->tape[bf->tp]++; }
+
+static void op_dec_t(bfx_t* bf) { bf->tape[bf->tp]--; }
+
+static void op_loop_start(bfx_t* bf, bfx_file_index_t* index) {
+    size_t i;
+    if (!bf->tape[bf->tp]) {
+        for (i = 0; i < bf->loops_len; i++) {
+            if (bf->loops[i].start.idx == bf->ip) {
+                bf->ip          = bf->loops[i].end.idx;
+                index->line     = bf->loops[i].end.line;
+                index->line_idx = bf->loops[i].end.line_idx;
+            }
+        }
+    }
+}
+
+static void op_loop_end(bfx_t* bf, bfx_file_index_t* index) {
+    size_t i;
+    if (bf->tape[bf->tp]) {
+        for (i = 0; i < bf->loops_len; i++) {
+            if (bf->loops[i].end.idx == bf->ip) {
+                bf->ip          = bf->loops[i].start.idx;
+                index->line     = bf->loops[i].start.line;
+                index->line_idx = bf->loops[i].start.line_idx;
+            }
+        }
+    }
+}
+
+static void op_getchar(bfx_t* bf) {
+    char c;
+    if (bf->receiving) {
+        c = fgetc(stdin);
+        if (c == EOF) {
+            bf->receiving = false;
+        } else {
+            bf->tape[bf->tp] = c;
+        }
+    }
+
+    if (!bf->receiving) {
+        switch (bf->eof_behavior) {
+        case BFX_EOF_BEHAVIOR_ZERO:
+            bf->tape[bf->tp] = 0;
+            break;
+        case BFX_EOF_BEHAVIOR_DECREMENT:
+            bf->tape[bf->tp]--;
+            break;
+        }
+    }
+}
+
+static void op_putchar(bfx_t* bf) { putchar(bf->tape[bf->tp]); }
