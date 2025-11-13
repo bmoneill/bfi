@@ -1,5 +1,5 @@
 /**
- * @file main.c
+ * @file bfx.c
  * @brief brainfuck interpreter entry point
  * @author Ben O'Neill <ben@oneill.sh>
  *
@@ -9,6 +9,7 @@
  */
 
 #include "bfx.h"
+#include "compile.h"
 
 #include <getopt.h>
 #include <stdbool.h>
@@ -30,15 +31,15 @@ static void print_version(const char*);
  */
 int main(int argc, char* argv[]) {
     int             opt;
-    bf_parameters_t params;
+    bfx_parameters_t params;
     char*           path        = NULL;
     char*           output_path = NULL;
     bool            compile     = false;
 
     params.flags                = 0;
-    params.input_max            = BF_DEFAULT_INPUT_MAX;
-    params.tape_size            = BF_DEFAULT_TAPE_SIZE;
-    params.eof_behavior         = BF_DEFAULT_EOF_BEHAVIOR;
+    params.input_max            = BFX_DEFAULT_INPUT_MAX;
+    params.tape_size            = BFX_DEFAULT_TAPE_SIZE;
+    params.eof_behavior         = BFX_DEFAULT_EOF_BEHAVIOR;
 
     while ((opt = getopt(argc, argv, "cCde:g:Go:Prst:vY")) != -1) {
         switch (opt) {
@@ -47,10 +48,10 @@ int main(int argc, char* argv[]) {
             break;
         case 'C':
             compile = true;
-            params.flags |= BF_FLAG_ONLY_GENERATE_C_SOURCE;
+            params.flags |= BFX_FLAG_ONLY_GENERATE_C_SOURCE;
             break;
         case 'd':
-            params.flags |= BF_FLAG_DEBUG;
+            params.flags |= BFX_FLAG_DEBUG;
             break;
         case 'e':
             if ((params.eof_behavior = get_eof_behavior(optarg)) == -1) {
@@ -71,10 +72,10 @@ int main(int argc, char* argv[]) {
             printf("-%c Unimplemented.\n", opt);
             break;
         case 'r':
-            params.flags |= BF_FLAG_REPL;
+            params.flags |= BFX_FLAG_REPL;
             break;
         case 's':
-            params.flags |= BF_FLAG_DISABLE_SPECIAL_INSTRUCTIONS;
+            params.flags |= BFX_FLAG_DISABLE_SPECIAL_INSTRUCTIONS;
             break;
         case 't':
             params.tape_size = atoi(optarg);
@@ -96,14 +97,14 @@ int main(int argc, char* argv[]) {
     }
 
     if (compile) {
-        bf_compile(path, output_path, params);
+        bfx_compile(path, output_path, params);
         return EXIT_SUCCESS;
     }
 
-    if (!(params.flags & BF_FLAG_REPL) && path) {
-        bf_run_file(path, params);
-    } else if ((params.flags & BF_FLAG_REPL) && !path) {
-        bf_run_repl(params);
+    if (!(params.flags & BFX_FLAG_REPL) && path) {
+        bfx_run_file(path, params);
+    } else if ((params.flags & BFX_FLAG_REPL) && !path) {
+        bfx_run_repl(params);
     } else {
         print_usage(argv[0]);
         return EXIT_FAILURE;
@@ -115,9 +116,9 @@ int main(int argc, char* argv[]) {
 static int get_eof_behavior(const char* s) {
     int         i;
     const char* eof_behavior[3];
-    eof_behavior[BF_EOF_BEHAVIOR_ZERO]      = EOF_BEHAVIOR_ZERO_S;
-    eof_behavior[BF_EOF_BEHAVIOR_DECREMENT] = EOF_BEHAVIOR_DECREMENT_S;
-    eof_behavior[BF_EOF_BEHAVIOR_UNCHANGED] = EOF_BEHAVIOR_UNCHANGED_S;
+    eof_behavior[BFX_EOF_BEHAVIOR_ZERO]      = EOF_BEHAVIOR_ZERO_S;
+    eof_behavior[BFX_EOF_BEHAVIOR_DECREMENT] = EOF_BEHAVIOR_DECREMENT_S;
+    eof_behavior[BFX_EOF_BEHAVIOR_UNCHANGED] = EOF_BEHAVIOR_UNCHANGED_S;
 
     for (i = 0; i < 3; i++) {
         if (!strcmp(s, eof_behavior[i])) {
@@ -170,7 +171,7 @@ static void print_usage(const char* argv0) {
             "a.out(.c).\n");
     fprintf(stderr,
             " -t tape_size:\tSet the size of the tape. Default is %d.\n",
-            BF_DEFAULT_TAPE_SIZE);
+            BFX_DEFAULT_TAPE_SIZE);
 }
 
-static void print_version(const char* argv0) { fprintf(stderr, "%s %s\n", argv0, BF_VERSION); }
+static void print_version(const char* argv0) { fprintf(stderr, "%s %s\n", argv0, BFX_VERSION); }

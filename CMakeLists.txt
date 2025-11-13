@@ -17,13 +17,13 @@ function(Enable_Tests)
 endfunction()
 
 function(Build_Binary)
-  add_subdirectory(src)
-  include_directories(src)
+  add_subdirectory(bfx)
+  include_directories(bfx)
 endfunction()
 
 function(Build_Library)
-  add_subdirectory(src/libbfx)
-  include_directories(src/libbfx)
+  add_subdirectory(libbfx)
+  include_directories(libbfx)
 endfunction()
 
 function(Build_Tests)

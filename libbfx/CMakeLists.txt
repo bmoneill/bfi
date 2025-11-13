@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-unused-function -
 
 include(GNUInstallDirs)
 
-set(LIBRARY_BASE_PATH ".")
+set(LIBRARY_BASE_PATH "./src")
 
 INCLUDE_DIRECTORIES (
 	"${LIBRARY_BASE_PATH}"
@@ -29,9 +29,9 @@ set(LIBRARY_PUBLIC_SRC
 )
 
 set(LIBRARY_PUBLIC_HEADERS
-	"${LIBRARY_BASE_PATH}/raycast/bfx.h"
-	"${LIBRARY_BASE_PATH}/raycast/compile.h"
-	"${LIBRARY_BASE_PATH}/raycast/interpret.h"
+	"${LIBRARY_BASE_PATH}/bfx.h"
+	"${LIBRARY_BASE_PATH}/compile.h"
+	"${LIBRARY_BASE_PATH}/interpret.h"
 )
 
 add_library (
