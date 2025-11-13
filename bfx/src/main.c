@@ -170,7 +170,7 @@ static void print_usage(const char* argv0) {
             " -o output_file:\t(for compilation) Write the output to the specified file instead of "
             "a.out(.c).\n");
     fprintf(stderr,
-            " -t tape_size:\tSet the size of the tape. Default is %d.\n",
+            " -t tape_size:\t\tSet the size of the tape. Default is %d.\n",
             BFX_DEFAULT_TAPE_SIZE);
 }
 
