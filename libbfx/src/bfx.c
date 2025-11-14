@@ -145,7 +145,7 @@ static void build_loops(bfx_t* bf) {
     line_idx       = 0;
     bf->loops_len  = 0;
     bf->loops_size = BFX_INITIAL_LOOP_SIZE;
-    bf->loops      = malloc(sizeof(bfx_loop_t) * BFX_INITIAL_LOOP_SIZE);
+    bf->loops      = malloc(sizeof(bfx_block_t) * BFX_INITIAL_LOOP_SIZE);
 
     for (i = 0; i < bf->prog_len; i++) {
         line_idx++;
@@ -218,6 +218,13 @@ static void init_bf(bfx_t* bf, bfx_parameters_t params) {
     bf->tape         = calloc(params.tape_size, sizeof(uint8_t));
     bf->receiving    = true;
     bf->eof_behavior = params.eof_behavior;
+
+    if (bf->flags & BFX_FLAG_PBRAIN) {
+        bf->procedures = calloc(BFX_PROCEDURE_SIZE, sizeof(bfx_block_t));
+        bf->procedure_identifiers = calloc(BFX_PROCEDURE_SIZE, sizeof(uint8_t));
+        bf->procedures_size = BFX_PROCEDURE_SIZE;
+        bf->procedures_len = 0;
+    }
 }
 
 /**

@@ -16,6 +16,11 @@ static void op_loop_end(bfx_t*, bfx_file_index_t*);
 static void op_getchar(bfx_t*);
 static void op_putchar(bfx_t*);
 
+/* pbrain */
+static void call_procedure(bfx_t*);
+static void ret_procedure(bfx_t*);
+static void populate_procedure(bfx_t*);
+
 void        bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
     size_t i;
     char   c;
@@ -45,6 +50,21 @@ void        bfx_interpret(bfx_t* bf, bfx_file_index_t* index) {
         break;
     case ']':
         op_loop_end(bf, index);
+        break;
+    case '(':
+        if (bf->flags & BFX_FLAG_PBRAIN) {
+            populate_procedure(bf);
+        }
+        break;
+    case ')':
+        if (bf->flags & BFX_FLAG_PBRAIN) {
+            ret_procedure(bf);
+        }
+        break;
+    case ':':
+        if (bf->flags & BFX_FLAG_PBRAIN) {
+            call_procedure(bf);
+        }
         break;
     case '#':
         if (BFX_IN_DEBUG_MODE(*bf) && BFX_SPECIAL_INSTRUCTIONS_ENABLED(*bf)) {
@@ -173,3 +193,37 @@ static void op_getchar(bfx_t* bf) {
 }
 
 static void op_putchar(bfx_t* bf) { putchar(bf->tape[bf->tp]); }
+
+static void call_procedure(bfx_t* bf) {
+    size_t i;
+    for (i = 0; i < bf->procedures_len; i++) {
+        if (bf->procedure_identifiers[i] == bf->tape[bf->tp]) {
+            bf->procedure_stack_top++;
+            bf->procedure_stack[bf->procedure_stack_top] = bf->ip;
+            bf->ip                                       = bf->procedures[i].start.idx;
+            return;
+        }
+    }
+}
+
+static void ret_procedure(bfx_t* bf) {
+    if (bf->procedure_stack_top > 0) {
+        bf->ip = bf->procedure_stack[bf->procedure_stack_top];
+        bf->procedure_stack_top--;
+    }
+}
+
+static void populate_procedure(bfx_t* bf) {
+    size_t i;
+
+    bf->procedures[bf->procedures_len].start.idx = bf->ip + 1;
+    bf->procedure_identifiers[bf->procedures_len] = bf->tape[bf->tp];
+    for (i = bf->ip; i < bf->prog_len; i++) {
+        if (bf->prog[i] == ')') {
+            bf->procedures[bf->procedures_len].end.idx = i;
+            bf->ip                                     = i + 1;
+            bf->procedures_len++;
+            return;
+        }
+    }
+}

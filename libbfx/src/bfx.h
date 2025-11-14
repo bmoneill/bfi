@@ -35,6 +35,10 @@
 #define BFX_INITIAL_LOOP_SIZE 2048
 #endif
 
+#ifndef BFX_PROCEDURE_SIZE
+#define BFX_PROCEDURE_SIZE 1024
+#endif
+
 #ifndef BFX_VERSION
 #define BFX_VERSION "unknown"
 #endif
@@ -86,7 +90,7 @@ typedef struct {
 typedef struct {
     bfx_file_index_t start;
     bfx_file_index_t end;
-} bfx_loop_t;
+} bfx_block_t;
 /**
  * @brief Structure to represent a brainfuck interpreter.
  * @param flags Flags for the interpreter.
@@ -98,29 +102,35 @@ typedef struct {
  * @param tape_size Size of the tape array.
  * @param ip Instruction pointer.
  * @param tp Data pointer.
- * @param tp_max Maximum data pointer value.
+ * @param tp_max The highest data pointer value that has occurred during execution.
  * @param loops Pointer to the loop array.
  * @param loops_len Length of the loop array.
  * @param loops_size Size of the loop array.
  */
 typedef struct {
-    int         flags;
-    bool        receiving;
-    char*       prog;
-    size_t      prog_len;
-    size_t      prog_size;
-    size_t      input_start;
-    size_t      input_ptr;
-    size_t      input_len;
-    uint8_t*    tape;
-    size_t      tape_size;
-    int         ip;
-    int         tp;
-    int         tp_max;
-    bfx_loop_t* loops;
-    size_t      loops_len;
-    size_t      loops_size;
-    int         eof_behavior;
+    int          flags;
+    bool         receiving;
+    char*        prog;
+    size_t       prog_len;
+    size_t       prog_size;
+    size_t       input_start;
+    size_t       input_ptr;
+    size_t       input_len;
+    uint8_t*     tape;
+    size_t       tape_size;
+    int          ip;
+    int          tp;
+    int          tp_max;
+    bfx_block_t* loops;
+    size_t       loops_len;
+    size_t       loops_size;
+    bfx_block_t* procedures;
+    uint8_t*     procedure_identifiers;
+    size_t       procedures_len;
+    size_t       procedures_size;
+    int*         procedure_stack;
+    int          procedure_stack_top;
+    int          eof_behavior;
 } bfx_t;
 
 /**
