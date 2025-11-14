@@ -1,6 +1,6 @@
 # bfx: an interpreter, compiler, and REPL for brainfuck and some of its derivatives
 
-[![CI status](https://github.com/bmoneill/bfx/actions/workflows/make.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfx/actions/workflows/make.yml).
+[![CI status](https://github.com/bmoneill/bfx/actions/workflows/cmake-single-platform.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfx/actions/workflows/cmake-single-platform.yml).
 [![clang-format status](https://github.com/bmoneill/bfx/actions/workflows/clang-format.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfx/actions/workflows/clang-format.yml)
 
 This is an interpreter, compiler, and REPL for the Turing-complete esoteric programming language
