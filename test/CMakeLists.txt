@@ -11,6 +11,7 @@ function(add_bfx_test name)
 
     # Define the test executable
     add_executable(${name}_tests ${test_src} ${runner_src})
+    target_include_directories(${name}_tests PRIVATE ../libbfx/src)
     target_link_libraries(${name}_tests bfx Unity)
 
     # Register as a CTest test
