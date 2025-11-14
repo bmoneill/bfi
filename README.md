@@ -3,8 +3,8 @@
 [![CI status](https://github.com/bmoneill/bfx/actions/workflows/cmake-single-platform.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfx/actions/workflows/cmake-single-platform.yml).
 [![clang-format status](https://github.com/bmoneill/bfx/actions/workflows/clang-format.yml/badge.svg?branch=main)](https://github.com/bmoneill/bfx/actions/workflows/clang-format.yml)
 
-This is an interpreter, compiler, and REPL for the Turing-complete esoteric programming language
-brainfuck, written in C89.
+This is an interpreter, compiler, and REPL for the Turing-complete esoteric
+programming language brainfuck, written in C89.
 
 ## Building
 
